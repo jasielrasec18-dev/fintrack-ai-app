@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #9333ea;
+  --color-background-dark: #0B0E14;
+  --color-background-dark-header: #0f111a;
+  --color-card-dark: #1E293B;
+  --color-border-aside: #64748B;
+  --color-text-primary: #F1F5F9;
+  --color-text-secondary: #94A3B8;
+  /* ShadCN table / components */
+  --color-foreground: #F1F5F9;
+  --color-muted: #334155;
+  --color-muted-foreground: #94A3B8;
+}
+
+body {
+  background: var(--color-background-dark);
+  color: var(--color-text-primary);
+  font-family: Arial, Helvetica, sans-serif;
+}
