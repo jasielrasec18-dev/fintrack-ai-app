@@ -3,6 +3,7 @@ import Header from "@/src/components/header";
 import BalanceCard from "@/src/components/balance-card";
 import ChartCard from "@/src/components/chart-card";
 import Insights from "@/src/components/insights";
+import Transactions from "@/src/components/transactions";
 
 import PigIcon from "@/src/assets/pig-icon.png";
 import Image from "next/image";
@@ -55,6 +56,8 @@ export default function Home() {
               />
             </div>
           </section>
+
+          <Transactions />
         </div>
       </div>
     </div>
