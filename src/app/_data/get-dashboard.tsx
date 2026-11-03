@@ -1,11 +1,26 @@
 import { prisma } from "@/src/app/_lib/prisma";
+import { auth } from "@/src/lib/auth";
 import { TransactionType } from "@prisma/client";
 import dayjs from "dayjs";
+// import { TotalExpensePerCategory, TransactionPercentagePerType } from "./types";
+// import { auth } from "@clerk/nextjs/server";
 import utc from "dayjs/plugin/utc";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 
 dayjs.extend(utc);
 
 export const getDashboard = async (month: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers()
+  })
+
+  const userId = session?.user?.id
+
+  if (!userId) {
+    redirect("/sign-in")
+  }
+
   const year = 2026;
 
   const startOfMonth = new Date(`${year}-${month}-01T00:00:00.000Z`);
@@ -17,6 +32,7 @@ export const getDashboard = async (month: string) => {
   );
 
   const where = {
+    userId,
     date: {
       gte: startOfMonth,
       lt: startOfNextMonth,

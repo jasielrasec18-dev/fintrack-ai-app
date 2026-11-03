@@ -7,15 +7,20 @@ import Transactions from "@/src/components/transactions";
 
 import PigIcon from "@/src/assets/pig-icon.png";
 import Image from "next/image";
+import { getDashboard } from "./_data/get-dashboard";
+import dayjs from "dayjs";
 
-const data = {
-  balance: 4750,
-  depositsTotal: 8200,
-  expensesTotal: 2450,
-  investmentsTotal: 1000,
-};
+interface DashboardPageProps {
+  searchParams: {
+    month?: string;
+  };
+}
 
-export default function Home() {
+export default async function Home({ searchParams }: DashboardPageProps) {
+  const month = searchParams.month ?? dayjs().format("MM");
+
+  const data = await getDashboard(month);
+
   return (
     <div className="flex min-h-screen overflow-hidden">
       <Sidebar />
@@ -26,12 +31,18 @@ export default function Home() {
         <div className="p-8 max-w-7xl mx-auto space-y-8">
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <BalanceCard {...data} />
-            <div className="bg-[#161b26] p-6 rounded-3xl border border-[#1d293d] flex flex-col justify-center items-center">
+            <div
+              className="bg-[#161b26] p-6 rounded-3xl border border-[#1d293d] flex 
+            flex-col justify-center items-center"
+            >
               <div className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 p-4 rounded-full mb-4">
                 <Image src={PigIcon} alt="" />
               </div>
               <h4 className="text-lg font-bold">Economia do mês</h4>
               <p className="text-3xl font-bold text-emerald-500 mt-2">+12%</p>
+              <p className="text-xs text-slate-500 mt-2 text-center">
+                Você economizou R$ 120,00 a mais que no mês passado.
+              </p>
             </div>
           </section>
 
@@ -46,13 +57,13 @@ export default function Home() {
             </div>
             <div className="w-1/2">
               <Insights
-                month="06"
+                month={month}
                 year={2026}
                 depositsTotal={data.depositsTotal}
                 expensesTotal={data.expensesTotal}
                 investmentsTotal={data.investmentsTotal}
                 balance={data.balance}
-                totalExpensePerCategory={[]}
+                totalExpensePerCategory={data.totalExpensePerCategory}
               />
             </div>
           </section>

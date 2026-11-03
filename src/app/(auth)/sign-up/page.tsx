@@ -2,13 +2,18 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { authClient } from "@/src/lib/auth-client";
 import { signUpSchema, type SignUpFormData } from "@/src/app/(auth)/_schemas/auth";
 
 const inputClassName =
   "w-full px-4 py-3.5 bg-slate-50 dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600";
 
 export default function SignUp() {
+  const router = useRouter();
+  const [apiError, setApiError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -18,9 +23,23 @@ export default function SignUp() {
     defaultValues: { name: "", email: "", password: "" },
   });
 
-  const onSubmit = (data: SignUpFormData) => {
-    // Autenticação será conectada em uma aula futura.
-    console.log("sign-up (somente UI):", data);
+  const onSubmit = async (data: SignUpFormData) => {
+    setApiError(null);
+    try {
+      const { data: result, error: err } = await authClient.signUp.email({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        callbackURL: "/",
+      });
+      if (err) {
+        setApiError(err.message ?? "Erro ao criar conta. Tente outro e-mail.");
+        return;
+      }
+      if (result) router.push("/");
+    } catch {
+      setApiError("Erro inesperado. Tente novamente.");
+    }
   };
 
   return (
@@ -41,6 +60,11 @@ export default function SignUp() {
             </p>
           </div>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {apiError && (
+              <p className="text-sm text-red-400 bg-red-500/10 rounded-xl px-4 py-2">
+                {apiError}
+              </p>
+            )}
             <div className="space-y-2">
               <label
                 htmlFor="name"
@@ -110,7 +134,7 @@ export default function SignUp() {
               type="submit"
               disabled={isSubmitting}
             >
-              Criar conta
+              {isSubmitting ? "Criando conta…" : "Criar conta"}
             </button>
           </form>
           <div className="mt-10 text-center">
