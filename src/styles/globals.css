@@ -1,21 +1,63 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-@theme {
-  --color-primary: #9333ea;
-  --color-background-dark: #0B0E14;
-  --color-background-dark-header: #0f111a;
-  --color-card-dark: #1E293B;
-  --color-border-aside: #64748B;
-  --color-text-primary: #F1F5F9;
-  --color-text-secondary: #94A3B8;
-  /* ShadCN table / components */
-  --color-foreground: #F1F5F9;
-  --color-muted: #334155;
-  --color-muted-foreground: #94A3B8;
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* Tokens dos componentes shadcn (src/app/_components/ui), na paleta escura do app */
+  --card: #161b26;
+  --card-foreground: #f1f5f9;
+  --popover: #161b26;
+  --popover-foreground: #f1f5f9;
+  --primary: #9333ea;
+  --primary-foreground: #ffffff;
+  --secondary: #1e293b;
+  --secondary-foreground: #f1f5f9;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f1f5f9;
+  --destructive: #fb2c36;
+  --border: rgb(255 255 255 / 10%);
+  --input: rgb(255 255 255 / 15%);
+  --ring: #9333ea;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
 }
 
 body {
-  background: var(--color-background-dark);
-  color: var(--color-text-primary);
+  background: var(--background);
+  color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
