@@ -1,141 +1,119 @@
-"use client";
+'use client'
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { authClient } from "@/src/lib/auth-client";
-import { signInSchema, type SignInFormData } from "@/src/app/(auth)/_schemas/auth";
+import { AuthLayout } from '../_components/auth-layout'
+import ArrowIcon from '../../../assets/arrow-icon.png'
+import Image from 'next/image'
+import { inputClass } from '../_styles/input'
+import z from 'zod'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { authClient } from '@/src/lib/auth-client'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
-const inputClassName =
-  "w-full px-4 py-3.5 bg-slate-50 dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600";
+const signInFormSchema = z.object({
+    email: z
+        .string()
+        .min(1, 'Email é obrigatório.')
+        .regex(z.regexes.email, 'Informe um email válido.'),
+    password: z.string().min(8, 'A senha precisa ter no mínimo 8 caracteres.'),
+})
 
-export default function SignIn() {
-  const router = useRouter();
-  const [apiError, setApiError] = useState<string | null>(null);
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<SignInFormData>({
-    resolver: zodResolver(signInSchema),
-    defaultValues: { email: "", password: "" },
-  });
+type SignInFormData = z.infer<typeof signInFormSchema>
 
-  const onSubmit = async (data: SignInFormData) => {
-    setApiError(null);
-    try {
-      const { data: result, error: err } = await authClient.signIn.email({
-        email: data.email,
-        password: data.password,
-        callbackURL: "/",
-      });
-      if (err) {
-        setApiError(err.message ?? "Erro ao entrar. Verifique e-mail e senha.");
-        return;
-      }
-      if (result) router.push("/");
-    } catch {
-      setApiError("Erro inesperado. Tente novamente.");
+export default function SignInPage() {
+    const [apiError, setApiError] = useState<string>('')
+
+    const {
+        handleSubmit,
+        register,
+        reset,
+        formState: { errors, isSubmitting },
+    } = useForm<SignInFormData>({
+        resolver: zodResolver(signInFormSchema),
+        defaultValues: {
+            email: '' as any,
+            password: '' as any,
+        },
+        mode: 'onBlur',
+    })
+
+    const router = useRouter()
+
+    const onSubmit = async (data: SignInFormData) => {
+        console.log(data)
+        try {
+            const { data: result, error: err } = await authClient.signIn.email({
+                email: data.email,
+                password: data.password,
+                callbackURL: '/',
+            })
+
+            if (err) {
+                setApiError(
+                    err.message ?? 'Erro ao criar conta. Tente outro email.'
+                )
+                return
+            }
+
+            if (result) router.push('/')
+
+            reset()
+        } catch (error) {
+            setApiError('Erro inesperado. Tente novamente.')
+        }
     }
-  };
 
-  return (
-    <section className="h-screen flex items-center justify-center">
-      <div className="w-full max-w-md">
-        <div className="bg-[#18181b] p-8 rounded-4xl shadow-2xl border border-slate-200 dark:border-zinc-800 transition-all duration-300">
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/20 mb-6">
-              <span className="material-symbols-rounded text-white text-4xl">
-                attach_money
-              </span>
-            </div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-              Bem-vindo de volta
-            </h1>
-            <p className="text-slate-500 dark:text-zinc-400 text-sm">
-              Entre com suas credenciais para continuar
-            </p>
-          </div>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {apiError && (
-              <p className="text-sm text-red-400 bg-red-500/10 rounded-xl px-4 py-2">
-                {apiError}
-              </p>
-            )}
-            <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-slate-700 dark:text-zinc-300 ml-1"
-              >
-                E-mail
-              </label>
-              <input
-                className={inputClassName}
-                id="email"
-                placeholder="seu@email.com"
-                type="email"
-                autoComplete="email"
-                disabled={isSubmitting}
-                {...register("email")}
-              />
-              {errors.email && (
-                <p className="text-sm text-red-400 ml-1">{errors.email.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-slate-700 dark:text-zinc-300 ml-1"
-              >
-                Senha
-              </label>
-              <input
-                className={inputClassName}
-                id="password"
-                placeholder="••••••••"
-                type="password"
-                autoComplete="current-password"
-                disabled={isSubmitting}
-                {...register("password")}
-              />
-              {errors.password && (
-                <p className="text-sm text-red-400 ml-1">
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
-            <button
-              className="w-full bg-primary hover:bg-purple-700 text-white font-semibold py-4 rounded-2xl shadow-lg shadow-purple-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
-              type="submit"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <span>Entrando…</span>
-              ) : (
-                <>
-                  <span>Entrar</span>
-                  <span className="material-symbols-rounded text-xl group-hover:translate-x-1 transition-transform">
-                    arrow_forward
-                  </span>
-                </>
-              )}
-            </button>
-          </form>
-          <div className="mt-10 text-center">
-            <p className="text-slate-500 dark:text-zinc-400 text-sm">
-              Não tem uma conta?{" "}
-              <Link
-                href="/sign-up"
-                className="text-primary font-semibold hover:underline decoration-2 underline-offset-4"
-              >
-                Criar conta
-              </Link>
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+    return (
+        <AuthLayout
+            title="Bem-vindo de volta"
+            description="Entre com suas credenciais para continuar"
+            footerText="Não tem uma conta?"
+            footerLinkText="Criar conta"
+            footerHref="/sign-up"
+        >
+            <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+                <label className="block text-sm text-zinc-300 mb-2">
+                    E-mail
+                </label>
+                <input
+                    type="email"
+                    placeholder="seu@email.com"
+                    className={inputClass}
+                    {...register('email')}
+                />
+
+                {errors.email && (
+                    <p className="text-xs text-red-500">
+                        {errors.email.message}
+                    </p>
+                )}
+
+                <label className="block text-sm text-zinc-300 mb-2">
+                    Senha
+                </label>
+                <input
+                    type="password"
+                    placeholder="••••••••"
+                    className={inputClass}
+                    {...register('password')}
+                />
+
+                {errors.password && (
+                    <p className="text-xs text-red-500">
+                        {errors.password.message}
+                    </p>
+                )}
+
+                <button
+                    type="submit"
+                    className="w-full bg-[#9333EA] flex items-center 
+                justify-center gap-2 font-semibold rounded-2xl py-4 cursor-pointer"
+                >
+                    <span>Entrar</span>
+                    <Image src={ArrowIcon} alt="Ícone de seta do botão" />
+                </button>
+            </form>
+        </AuthLayout>
+    )
 }

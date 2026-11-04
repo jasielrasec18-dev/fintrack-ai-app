@@ -11,7 +11,7 @@
 !.yarn/versions
 .cursor
 .devcontainer
-
+.env
 # testing
 /coverage
 

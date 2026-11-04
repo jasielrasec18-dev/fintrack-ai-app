@@ -1,76 +1,74 @@
-import Sidebar from "@/src/components/sidebar";
-import Header from "@/src/components/header";
-import BalanceCard from "@/src/components/balance-card";
-import ChartCard from "@/src/components/chart-card";
-import Insights from "@/src/components/insights";
-import Transactions from "@/src/components/transactions";
-
-import PigIcon from "@/src/assets/pig-icon.png";
-import Image from "next/image";
-import { getDashboard } from "./_data/get-dashboard";
-import dayjs from "dayjs";
+import { Sidebar } from './_components/sidebar'
+import { Header } from './_components/header'
+import BalanceCard from './_components/balance-card'
+import { FinancialMetricCard } from './_components/financial-metric-card'
+import { ChartCard } from './_components/chart-card'
+import { AiInsights } from './_components/ai-insights'
+import { RecentTransactions } from './_components/recent-transactions'
+import { getDashboard } from './_data/get-dashboard'
+import dayjs from 'dayjs'
 
 interface DashboardPageProps {
-  searchParams: {
-    month?: string;
-  };
+    searchParams: Promise<{ month?: string }>
 }
 
 export default async function Home({ searchParams }: DashboardPageProps) {
-  const month = searchParams.month ?? dayjs().format("MM");
+    const { month } = await searchParams
 
-  const data = await getDashboard(month);
+    const currentMonth = month ?? dayjs().format('MM')
 
-  return (
-    <div className="flex min-h-screen overflow-hidden">
-      <Sidebar />
+    const data = await getDashboard(currentMonth)
 
-      <div className="flex-1 overflow-y-auto">
-        <Header />
+    return (
+        <div className="flex min-h-screen bg-[#0F111A]">
+            <Sidebar />
+            <div className="flex flex-1 flex-col">
+                <Header userName={data.session.user.name} date={new Date()} />
+                <main className="p-8 space-y-8">
+                    <section className="grid lg:grid-cols-3 grid-cols-1 gap-6">
+                        <div className="lg:col-span-2 col-span-1">
+                            <BalanceCard
+                                balance={data.balance}
+                                revenues={data.depositsTotal}
+                                expenses={data.expensesTotal}
+                            />
+                        </div>
+                        <FinancialMetricCard
+                            difference={data.difference}
+                            percentage={data.percentage}
+                        />
+                    </section>
 
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
-          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <BalanceCard {...data} />
-            <div
-              className="bg-[#161b26] p-6 rounded-3xl border border-[#1d293d] flex 
-            flex-col justify-center items-center"
-            >
-              <div className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 p-4 rounded-full mb-4">
-                <Image src={PigIcon} alt="" />
-              </div>
-              <h4 className="text-lg font-bold">Economia do mês</h4>
-              <p className="text-3xl font-bold text-emerald-500 mt-2">+12%</p>
-              <p className="text-xs text-slate-500 mt-2 text-center">
-                Você economizou R$ 120,00 a mais que no mês passado.
-              </p>
+                    <section className="flex gap-8">
+                        <div className="flex-1">
+                            <ChartCard
+                                depositsTotal={data.depositsTotal}
+                                expensesTotal={data.expensesTotal}
+                                investmentsTotal={data.investmentsTotal}
+                                balance={data.balance}
+                            />
+                        </div>
+
+                        <div className="flex-1">
+                            <AiInsights
+                                month={currentMonth}
+                                year={dayjs().year()}
+                                depositsTotal={data.depositsTotal}
+                                expensesTotal={data.expensesTotal}
+                                investmentsTotal={data.investmentsTotal}
+                                balance={data.balance}
+                                totalExpensePerCategory={
+                                    data.totalExpensePerCategory
+                                }
+                            />
+                        </div>
+                    </section>
+
+                    <section>
+                        <RecentTransactions />
+                    </section>
+                </main>
             </div>
-          </section>
-
-          <section className="flex w-full gap-8">
-            <div className="w-1/2">
-              <ChartCard
-                depositsTotal={data.depositsTotal}
-                expensesTotal={data.expensesTotal}
-                investmentsTotal={data.investmentsTotal}
-                balance={data.balance}
-              />
-            </div>
-            <div className="w-1/2">
-              <Insights
-                month={month}
-                year={2026}
-                depositsTotal={data.depositsTotal}
-                expensesTotal={data.expensesTotal}
-                investmentsTotal={data.investmentsTotal}
-                balance={data.balance}
-                totalExpensePerCategory={data.totalExpensePerCategory}
-              />
-            </div>
-          </section>
-
-          <Transactions />
         </div>
-      </div>
-    </div>
-  );
+    )
 }
