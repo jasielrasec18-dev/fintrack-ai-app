@@ -25,7 +25,7 @@ export const Header = ({ userName, userEmail, date }: HeaderProps) => {
             <header className="flex h-20 items-center justify-between gap-4 border-b border-card-border bg-app px-4 md:px-8">
                 <MobileNav />
                 <div className="flex min-w-0 flex-1 flex-col">
-                    <div className="text-lg font-bold leading-6 tracking-[-0.025em] text-[#F1F5F9]">
+                    <div className="truncate text-[15px] font-bold leading-6 tracking-[-0.025em] text-[#F1F5F9] sm:text-lg">
                         {greeting}
                     </div>
                     <div className="text-xs font-normal leading-4 tracking-[-0.025em] text-text-muted">

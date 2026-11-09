@@ -55,13 +55,13 @@ export const DeleteTransactionButton = ({
                 <button
                     type="button"
                     aria-label={`Excluir transação ${name}`}
-                    className="cursor-pointer rounded-md p-1 transition-colors hover:bg-white/10"
+                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-white/10 md:h-7 md:w-7"
                 >
                     <Image src={DeleteIcon} alt="" />
                 </button>
             </DialogTrigger>
 
-            <DialogContent className="max-w-[400px] rounded-2xl border border-white/10 bg-[#1E293B] sm:max-w-[400px]">
+            <DialogContent className="max-w-[min(400px,calc(100%-2rem))] rounded-2xl border border-white/10 bg-[#1E293B] sm:max-w-[400px]">
                 <DialogHeader>
                     <DialogTitle className="text-lg font-semibold text-white">
                         Excluir transação?

@@ -9,7 +9,7 @@ export const TransactionActions = ({
     transaction: Transaction
 }) => {
     return (
-        <div className="flex items-center justify-end gap-3">
+        <div className="flex items-center justify-end gap-1 md:gap-3">
             <TransactionFormDialog
                 key={transaction.updatedAt.toISOString()}
                 variant="edit"

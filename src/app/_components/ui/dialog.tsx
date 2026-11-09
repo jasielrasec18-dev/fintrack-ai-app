@@ -71,8 +71,8 @@ function DialogContent({
                     <DialogPrimitive.Close data-slot="dialog-close" asChild>
                         <Button
                             variant="ghost"
-                            className="absolute top-4 right-4"
-                            size="icon-sm"
+                            className="absolute top-3 right-3"
+                            size="icon"
                         >
                             <XIcon />
                             <span className="sr-only">Fechar</span>

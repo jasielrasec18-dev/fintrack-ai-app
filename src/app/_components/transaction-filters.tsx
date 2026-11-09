@@ -46,7 +46,7 @@ export const TransactionFilters = () => {
     }
 
     return (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_180px_180px_150px_150px]">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_170px_220px_150px_150px]">
             <div className="relative sm:col-span-2 xl:col-span-1">
                 <Image
                     src={searchIcon}

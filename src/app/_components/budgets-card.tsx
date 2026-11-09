@@ -27,7 +27,7 @@ export const BudgetsCard = ({ budgets }: BudgetsCardProps) => {
                 <h3 className="text-xl font-bold text-white">Orçamentos</h3>
                 <Link
                     href="/budgets"
-                    className="text-sm font-semibold text-[#A855F7] hover:underline"
+                    className="inline-block py-2 text-sm font-semibold text-[#A855F7] hover:underline"
                 >
                     Gerenciar
                 </Link>

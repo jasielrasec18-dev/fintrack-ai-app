@@ -1,12 +1,6 @@
 'use client'
 
-import {
-    Bar,
-    BarChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-} from 'recharts'
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import { formatBRL } from '@/src/lib/format'
 
 interface MonthlyEvolutionChartProps {
@@ -23,8 +17,8 @@ export function MonthlyEvolutionChart({ data }: MonthlyEvolutionChartProps) {
 
     return (
         <div className="h-full rounded-3xl border border-card-border bg-card p-8">
-            <div className="flex items-center justify-between gap-3">
-                <h3 className="text-xl font-bold text-white">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="text-xl font-bold whitespace-nowrap text-white">
                     Evolução mensal
                 </h3>
                 <div className="flex gap-4">
@@ -48,7 +42,11 @@ export function MonthlyEvolutionChart({ data }: MonthlyEvolutionChartProps) {
 
             {hasData ? (
                 <div className="mt-6 h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer
+                        width="100%"
+                        height="100%"
+                        initialDimension={{ width: 1, height: 1 }}
+                    >
                         <BarChart data={data} barGap={4}>
                             <XAxis
                                 dataKey="label"

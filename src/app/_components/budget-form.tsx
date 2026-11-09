@@ -82,7 +82,7 @@ export const BudgetForm = ({ categories, initial }: BudgetFormProps) => {
                                         [category]: event.target.value,
                                     }))
                                 }
-                                className="h-10 w-36 rounded-xl border border-white/10 bg-[#334155]/50 px-3.5 text-sm text-white placeholder:text-text-subtle"
+                                className="h-10 w-28 shrink-0 rounded-xl sm:w-36 border border-white/10 bg-[#334155]/50 px-3.5 text-sm text-white placeholder:text-text-subtle"
                             />
                         </li>
                     )

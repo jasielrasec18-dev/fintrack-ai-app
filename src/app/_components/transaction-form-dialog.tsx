@@ -213,7 +213,7 @@ export const TransactionFormDialog = ({
                         <button
                             type="button"
                             aria-label={`Editar transação ${transaction?.name ?? ''}`}
-                            className="cursor-pointer rounded-md p-1 transition-colors hover:bg-white/10"
+                            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-white/10 md:h-7 md:w-7"
                         >
                             <Image src={EditIcon} alt="" />
                         </button>
@@ -237,7 +237,7 @@ export const TransactionFormDialog = ({
                     )}
                 </DialogTrigger>
 
-                <DialogContent className="max-h-[90vh] max-w-[400px] gap-0 overflow-y-auto rounded-2xl border border-white/10 bg-[#1E293B] p-0 sm:max-w-[400px]">
+                <DialogContent className="flex max-h-[90dvh] max-w-[min(400px,calc(100%-2rem))] flex-col gap-0 overflow-hidden rounded-2xl border border-white/10 bg-[#1E293B] p-0 sm:max-w-[400px]">
                     <DialogHeader className="border-b border-white/10 px-6 py-5">
                         <DialogTitle className="text-lg font-semibold text-white">
                             {transaction
@@ -246,8 +246,11 @@ export const TransactionFormDialog = ({
                         </DialogTitle>
                     </DialogHeader>
 
-                    <form onSubmit={handleSubmit(onSubmit)}>
-                        <div className="flex flex-col gap-5 px-6 py-5">
+                    <form
+                        onSubmit={handleSubmit(onSubmit)}
+                        className="flex min-h-0 flex-1 flex-col"
+                    >
+                        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 py-5">
                             <div>
                                 <Label htmlFor="name" className={labelClass}>
                                     Título
@@ -474,7 +477,7 @@ export const TransactionFormDialog = ({
                             </p>
                         )}
 
-                        <DialogFooter className="mx-0 mb-0 flex-row gap-3 rounded-none border-none bg-transparent p-0 px-6 pb-6 sm:flex-row">
+                        <DialogFooter className="mx-0 mb-0 shrink-0 flex-row gap-3 rounded-none border-none bg-transparent p-0 px-6 pt-1 pb-6 sm:flex-row">
                             <button
                                 type="button"
                                 onClick={() => handleOpenChange(false)}
