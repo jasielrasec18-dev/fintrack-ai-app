@@ -2,13 +2,7 @@ import Image from 'next/image'
 import iconReceitas from '@/src/assets/revenues-icon.png'
 import iconDespesas from '@/src/assets/expenses-icon.png'
 import decorative from '@/src/assets/decorative-icon.png'
-
-function formatBRL(value: number): string {
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-    }).format(value)
-}
+import { formatBRL } from '@/src/lib/format'
 
 export interface BalanceCardProps {
     /** Saldo total (receitas - despesas) */
@@ -26,7 +20,7 @@ export default function BalanceCard({
 }: BalanceCardProps) {
     return (
         <section
-            className="relative flex w-full flex-col justify-between gap-2 self-stretch overflow-hidden rounded-3xl bg-[#9333EA] p-8 font-(family-name:--font-inter) shadow-[0px_8px_10px_-6px_rgba(168,85,247,0.2),0px_20px_25px_-5px_rgba(168,85,247,0.2)]"
+            className="relative flex h-full w-full flex-col justify-between gap-2 self-stretch overflow-hidden rounded-3xl bg-primary p-8 shadow-[0px_8px_10px_-6px_rgba(168,85,247,0.2),0px_20px_25px_-5px_rgba(168,85,247,0.2)]"
             aria-label="Resumo do saldo"
         >
             <div
@@ -40,20 +34,20 @@ export default function BalanceCard({
 
             <div className="relative flex flex-row items-start justify-between gap-4">
                 <div className="flex flex-col gap-1">
-                    <p className="text-sm font-medium leading-[1.43] text-[#F3E8FF]">
+                    <p className="text-sm font-medium leading-[1.43] text-[#F3E8FF]/90">
                         Saldo total
                     </p>
-                    <p className="text-[2.5rem] font-bold leading-none tracking-[-0.025em] text-white">
+                    <p className="text-4xl font-bold sm:text-5xl leading-none tracking-[-0.025em] text-white">
                         {formatBRL(balance)}
                     </p>
                 </div>
-                <div className="flex shrink-0 items-center justify-center rounded-2xl bg-white/20 p-3 pb-3.5 pt-3 backdrop-blur-md">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md">
                     <Image
                         src={decorative}
                         alt=""
-                        width={54}
-                        height={63}
-                        className="h-[42px] w-9 object-contain"
+                        width={24}
+                        height={24}
+                        className="object-contain"
                     />
                 </div>
             </div>

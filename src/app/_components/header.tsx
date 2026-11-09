@@ -1,12 +1,7 @@
 import Image from 'next/image'
-import { Inter } from 'next/font/google'
 
 import userAvatar from '@/src/assets/avatar.png'
-
-const inter = Inter({
-    subsets: ['latin'],
-    weight: ['400', '500', '600'],
-})
+import { MobileNav } from './mobile-nav'
 
 interface HeaderProps {
     userName: string
@@ -22,14 +17,14 @@ export const Header = ({
 
     return (
         <header
-            className={`${inter.className} flex items-center justify-between 
-            border-b border-[#1E293B] bg-[#0F111A] px-8 py-4`}
+            className="sticky top-0 z-10 flex h-20 items-center justify-between gap-4 border-b border-card-border bg-app px-4 md:px-8"
         >
-            <div className="flex flex-col">
+            <MobileNav />
+            <div className="flex min-w-0 flex-1 flex-col">
                 <div className="text-lg font-bold leading-6 tracking-[-0.025em] text-[#F1F5F9]">
                     {greeting}
                 </div>
-                <div className="text-xs font-normal leading-4 tracking-[-0.025em] text-[#94A3B8]">
+                <div className="text-xs font-normal leading-4 tracking-[-0.025em] text-text-muted">
                     {date.toLocaleDateString('pt-BR', {
                         weekday: 'long',
                         day: 'numeric',
@@ -38,7 +33,7 @@ export const Header = ({
                 </div>
             </div>
 
-            <div className="h-10 w-10 overflow-hidden rounded-full bg-[#1E293B]">
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#1E293B] ring-1 ring-card-border">
                 <Image
                     src={userAvatar}
                     alt="Usuário"

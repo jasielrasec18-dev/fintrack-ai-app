@@ -91,8 +91,8 @@ export const AiInsights = ({ month, year }: AiInsightsProps) => {
                     role="status"
                     aria-label="Analisando seus dados do mês"
                 >
-                    <div className="h-24 rounded-2xl border border-[#1E293B] bg-[#161B26]" />
-                    <div className="h-36 rounded-2xl border border-[#10B981]/20 bg-[#10B981]/5" />
+                    <div className="h-24 rounded-2xl border border-card-border bg-card" />
+                    <div className="h-36 rounded-2xl border border-success/20 bg-success/5" />
                 </div>
             ) : error ? (
                 <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6">
@@ -106,21 +106,21 @@ export const AiInsights = ({ month, year }: AiInsightsProps) => {
                     </button>
                 </div>
             ) : insights?.empty ? (
-                <div className="rounded-2xl border border-[#1E293B] bg-[#161B26] p-6 text-center text-sm text-[#94A3B8]">
+                <div className="rounded-2xl border border-card-border bg-card p-6 text-center text-sm text-text-muted">
                     Adicione transações neste mês para receber sugestões da IA.
                 </div>
             ) : (
                 <>
                     {insights?.topCategory && insights.topCategoryAmount && (
-                        <div className="flex items-center gap-4 rounded-2xl border border-[#1E293B] bg-[#161B26] p-6">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#9333EA]/20">
+                        <div className="flex items-center gap-4 rounded-2xl border border-card-border bg-card p-6">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/20">
                                 <Image src={insightsIcon} alt="" />
                             </div>
                             <div className="min-w-0">
                                 <p className="font-semibold text-white">
                                     Categoria com maior gasto
                                 </p>
-                                <p className="text-sm text-[#94A3B8]">
+                                <p className="text-sm text-text-muted">
                                     {insights.topCategory}:{' '}
                                     <span className="font-semibold text-[#A855F7]">
                                         {insights.topCategoryAmount}
@@ -131,8 +131,8 @@ export const AiInsights = ({ month, year }: AiInsightsProps) => {
                     )}
 
                     {insights?.suggestion && (
-                        <div className="flex gap-4 rounded-2xl border border-[#10B981]/20 bg-[#10B981]/5 p-6">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#10B981]/20">
+                        <div className="flex gap-4 rounded-2xl border border-success/20 bg-success/5 p-6">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-success/20">
                                 <Image src={bulbIcon} alt="" />
                             </div>
                             <div className="min-w-0">
@@ -152,7 +152,7 @@ export const AiInsights = ({ month, year }: AiInsightsProps) => {
                 type="button"
                 onClick={handleRefresh}
                 disabled={loading}
-                className="flex h-14 w-full cursor-pointer items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[#1E293B] text-[#94A3B8] transition-colors hover:border-[#9333EA] hover:text-[#9333EA] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-14 w-full cursor-pointer items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-card-border text-text-muted transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
             >
                 <Image
                     src={refreshIcon}

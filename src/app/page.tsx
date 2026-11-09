@@ -30,48 +30,50 @@ export default async function Home({ searchParams }: DashboardPageProps) {
     const data = await getDashboard(currentMonth, currentYear)
 
     return (
-        <div className="flex min-h-screen bg-[#0F111A]">
+        <div className="flex min-h-screen bg-app">
             <Sidebar />
-            <div className="flex flex-1 flex-col">
+            <div className="flex min-w-0 flex-1 flex-col">
                 <Header userName={data.session.user.name} date={new Date()} />
-                <main className="p-8 space-y-8">
-                    <section className="grid lg:grid-cols-3 grid-cols-1 gap-6">
-                        <div className="lg:col-span-2 col-span-1">
-                            <BalanceCard
-                                balance={data.balance}
-                                revenues={data.depositsTotal}
-                                expenses={data.expensesTotal}
+                <main className="p-4 md:p-8">
+                    <div className="mx-auto w-full max-w-[1120px] space-y-8">
+                        <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                            <div className="lg:col-span-2">
+                                <BalanceCard
+                                    balance={data.balance}
+                                    revenues={data.depositsTotal}
+                                    expenses={data.expensesTotal}
+                                />
+                            </div>
+                            <FinancialMetricCard
+                                difference={data.difference}
+                                percentage={data.percentage}
                             />
-                        </div>
-                        <FinancialMetricCard
-                            difference={data.difference}
-                            percentage={data.percentage}
-                        />
-                    </section>
+                        </section>
 
-                    <section className="flex gap-8">
-                        <div className="flex-1">
-                            <ChartCard
-                                month={currentMonth}
-                                depositsTotal={data.depositsTotal}
-                                expensesTotal={data.expensesTotal}
-                                investmentsTotal={data.investmentsTotal}
-                                balance={data.balance}
-                            />
-                        </div>
+                        <section className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                            <div className="min-w-0">
+                                <ChartCard
+                                    month={currentMonth}
+                                    depositsTotal={data.depositsTotal}
+                                    expensesTotal={data.expensesTotal}
+                                    investmentsTotal={data.investmentsTotal}
+                                    balance={data.balance}
+                                />
+                            </div>
 
-                        <div className="flex-1">
-                            <AiInsights
-                                key={`${currentYear}-${currentMonth}`}
-                                month={currentMonth}
-                                year={currentYear}
-                            />
-                        </div>
-                    </section>
+                            <div className="min-w-0">
+                                <AiInsights
+                                    key={`${currentYear}-${currentMonth}`}
+                                    month={currentMonth}
+                                    year={currentYear}
+                                />
+                            </div>
+                        </section>
 
-                    <section>
-                        <RecentTransactions />
-                    </section>
+                        <section>
+                            <RecentTransactions />
+                        </section>
+                    </div>
                 </main>
             </div>
         </div>

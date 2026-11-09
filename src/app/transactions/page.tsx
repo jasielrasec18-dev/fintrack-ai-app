@@ -1,5 +1,4 @@
 import Image from 'next/image'
-import { Inter } from 'next/font/google'
 
 import { Sidebar } from '@/src/app/_components/sidebar'
 import { Header } from '@/src/app/_components/header'
@@ -25,15 +24,10 @@ import {
 import EditIcon from '@/src/assets/edit-icon.png'
 import DeleteIcon from '@/src/assets/delete-icon.png'
 
-const inter = Inter({
-    subsets: ['latin'],
-    weight: ['400', '500', '600', '700'],
-})
-
 const TYPE_BADGE_STYLES: Record<TransactionType, string> = {
-    DEPOSIT: 'bg-[#00BC7D]/20 text-[#00D492]',
-    EXPENSE: 'bg-[#FB2C36]/20 text-[#FF6467]',
-    INVESTMENT: 'bg-[#2B7FFF]/20 text-[#51A2FF]',
+    DEPOSIT: 'bg-[#00BC7D]/20 text-success-text',
+    EXPENSE: 'bg-[#FB2C36]/20 text-danger-text',
+    INVESTMENT: 'bg-[#2B7FFF]/20 text-info-text',
 }
 
 const formatCurrency = (value: number) =>
@@ -70,13 +64,13 @@ export default async function TransactionsPage() {
     })
 
     return (
-        <div className="flex min-h-screen bg-[#0F111A]">
+        <div className="flex min-h-screen bg-app">
             <Sidebar />
 
-            <div className={`flex flex-1 flex-col ${inter.className}`}>
+            <div className="flex min-w-0 flex-1 flex-col">
                 <Header userName={session.user.name} date={new Date()} />
 
-                <main className="p-8">
+                <main className="p-4 md:p-8">
                     <section className="space-y-1">
                         <h1 className="text-[30px] font-bold leading-[1.2] tracking-[-0.025em] text-white">
                             Transacoes
@@ -93,22 +87,22 @@ export default async function TransactionsPage() {
                                     <TableHead className="h-auto px-4 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-[#CAD5E2]">
                                         Nome
                                     </TableHead>
-                                    <TableHead className="h-auto px-4 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-[#94A3B8]">
+                                    <TableHead className="h-auto px-4 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-text-muted">
                                         Categoria
                                     </TableHead>
-                                    <TableHead className="h-auto px-4 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-[#94A3B8]">
+                                    <TableHead className="h-auto px-4 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-text-muted">
                                         Metodo
                                     </TableHead>
-                                    <TableHead className="h-auto px-4 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-[#94A3B8]">
+                                    <TableHead className="h-auto px-4 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-text-muted">
                                         Tipo
                                     </TableHead>
-                                    <TableHead className="h-auto px-4 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-[#94A3B8]">
+                                    <TableHead className="h-auto px-4 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-text-muted">
                                         Data
                                     </TableHead>
-                                    <TableHead className="h-auto px-4 py-4 text-right text-xs font-semibold uppercase tracking-[0.05em] text-[#94A3B8]">
+                                    <TableHead className="h-auto px-4 py-4 text-right text-xs font-semibold uppercase tracking-[0.05em] text-text-muted">
                                         Valor
                                     </TableHead>
-                                    <TableHead className="h-auto px-4 py-4 text-right text-xs font-semibold uppercase tracking-[0.05em] text-[#94A3B8]">
+                                    <TableHead className="h-auto px-4 py-4 text-right text-xs font-semibold uppercase tracking-[0.05em] text-text-muted">
                                         Acoes
                                     </TableHead>
                                 </TableRow>
@@ -154,8 +148,8 @@ export default async function TransactionsPage() {
                                         <TableCell
                                             className={`px-4 py-5 text-right text-sm font-semibold ${
                                                 transaction.type === 'EXPENSE'
-                                                    ? 'text-[#FF6467]'
-                                                    : 'text-[#00D492]'
+                                                    ? 'text-danger-text'
+                                                    : 'text-success-text'
                                             }`}
                                         >
                                             {formatCurrency(

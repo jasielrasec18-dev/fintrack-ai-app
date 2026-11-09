@@ -3,8 +3,8 @@
 @import "shadcn/tailwind.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0f111a;
+  --foreground: #f1f5f9;
 
   /* Tokens dos componentes shadcn (src/app/_components/ui), na paleta escura do app */
   --card: #161b26;
@@ -28,8 +28,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
 
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -47,17 +46,21 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-app: #0f111a;
+  --color-card-border: #1e293b;
+  --color-primary-soft: #8e51ff;
+  --color-success: #10b981;
+  --color-success-text: #00d492;
+  --color-danger: #f43f5e;
+  --color-danger-text: #ff6467;
+  --color-info: #3b82f6;
+  --color-info-text: #51a2ff;
+  --color-text-muted: #94a3b8;
+  --color-text-subtle: #64748b;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
