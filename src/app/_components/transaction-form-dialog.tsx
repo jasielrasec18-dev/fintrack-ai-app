@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import Image from 'next/image'
 import PlusIcon from '@/src/assets/plus-icon.png'
@@ -47,6 +47,8 @@ import {
 import { addTransaction } from '../_actions/add-transaction'
 import { updateTransaction } from '../_actions/update-transaction'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { formatBRL, parseCurrencyInput } from '@/src/lib/format'
 
 const fieldClass =
     'h-10 rounded-xl border border-white/10 bg-[#334155]/50 px-3.5 text-sm placeholder:text-text-subtle'
@@ -73,8 +75,7 @@ export const TransactionFormDialog = ({
     const [open, setIsOpen] = useState<boolean>(false)
     const [serverError, setServerError] = useState<string | null>(null)
     const [isSuggested, setIsSuggested] = useState<boolean>(false)
-    const categoryTouched = useRef<boolean>(false)
-    const typeTouched = useRef<boolean>(false)
+    const [isCategoryTouched, setIsCategoryTouched] = useState<boolean>(false)
 
     const router = useRouter()
 
@@ -84,6 +85,7 @@ export const TransactionFormDialog = ({
         reset,
         control,
         setValue,
+        getValues,
         formState: { errors, isSubmitting },
     } = useForm<CreateTransactionFormInput, unknown, CreateTransactionFormData>(
         {
@@ -104,12 +106,12 @@ export const TransactionFormDialog = ({
 
     useEffect(() => {
         const name = title?.trim() ?? ''
-        if (!open || transaction || name.length < 3) return
+        if (!open || transaction || isCategoryTouched || name.length < 3) {
+            return
+        }
 
         const controller = new AbortController()
         const timer = setTimeout(async () => {
-            if (categoryTouched.current) return
-
             // Sem sugestão, o formulário segue normalmente.
             try {
                 const response = await fetch('/api/ai-categorize', {
@@ -124,13 +126,13 @@ export const TransactionFormDialog = ({
                     category: TransactionCategory | null
                     type: TransactionType | null
                 } = await response.json()
-                if (!suggestion.category || categoryTouched.current) return
+                if (!suggestion.category) return
 
                 setValue('category', suggestion.category, {
                     shouldValidate: true,
                 })
                 setIsSuggested(true)
-                if (suggestion.type && !typeTouched.current) {
+                if (suggestion.type && !getValues('type')) {
                     setValue('type', suggestion.type, { shouldValidate: true })
                 }
             } catch {}
@@ -140,7 +142,33 @@ export const TransactionFormDialog = ({
             clearTimeout(timer)
             controller.abort()
         }
-    }, [title, open, transaction, setValue])
+    }, [title, open, transaction, isCategoryTouched, setValue, getValues])
+
+    useEffect(() => {
+        if (variant !== 'default') return
+
+        const handleShortcut = (event: KeyboardEvent) => {
+            if (
+                event.key.toLowerCase() !== 'n' ||
+                event.ctrlKey ||
+                event.metaKey ||
+                event.altKey
+            ) {
+                return
+            }
+
+            const target = event.target as HTMLElement
+            if (target.closest('input, textarea, select, [role="dialog"]')) {
+                return
+            }
+
+            event.preventDefault()
+            setIsOpen(true)
+        }
+
+        window.addEventListener('keydown', handleShortcut)
+        return () => window.removeEventListener('keydown', handleShortcut)
+    }, [variant])
 
     const handleOpenChange = (nextOpen: boolean) => {
         setIsOpen(nextOpen)
@@ -148,8 +176,7 @@ export const TransactionFormDialog = ({
             reset()
             setServerError(null)
             setIsSuggested(false)
-            categoryTouched.current = false
-            typeTouched.current = false
+            setIsCategoryTouched(false)
         }
     }
 
@@ -167,10 +194,14 @@ export const TransactionFormDialog = ({
             }
             handleOpenChange(false)
             router.refresh()
-        } catch {
-            setServerError(
-                'Não foi possível salvar a transação. Tente novamente.'
+            toast.success(
+                transaction ? 'Transação atualizada' : 'Transação adicionada'
             )
+        } catch {
+            const message =
+                'Não foi possível salvar a transação. Tente novamente.'
+            setServerError(message)
+            toast.error(message)
         }
     }
 
@@ -238,16 +269,32 @@ export const TransactionFormDialog = ({
                                 <Label htmlFor="amount" className={labelClass}>
                                     Valor (R$)
                                 </Label>
-                                <Input
-                                    id="amount"
-                                    className={fieldClass}
-                                    type="number"
-                                    step="0.01"
-                                    inputMode="decimal"
-                                    placeholder="0,00"
-                                    {...register('amount', {
-                                        valueAsNumber: true,
-                                    })}
+                                <Controller
+                                    control={control}
+                                    name="amount"
+                                    render={({ field }) => (
+                                        <Input
+                                            id="amount"
+                                            ref={field.ref}
+                                            name={field.name}
+                                            onBlur={field.onBlur}
+                                            className={fieldClass}
+                                            inputMode="numeric"
+                                            placeholder="R$ 0,00"
+                                            value={
+                                                typeof field.value === 'number'
+                                                    ? formatBRL(field.value)
+                                                    : ''
+                                            }
+                                            onChange={(event) =>
+                                                field.onChange(
+                                                    parseCurrencyInput(
+                                                        event.target.value
+                                                    )
+                                                )
+                                            }
+                                        />
+                                    )}
                                 />
                                 {errors.amount && (
                                     <p className="mt-1.5 text-xs text-red-400">
@@ -265,10 +312,7 @@ export const TransactionFormDialog = ({
                                     name="type"
                                     render={({ field }) => (
                                         <Select
-                                            onValueChange={(value) => {
-                                                typeTouched.current = true
-                                                field.onChange(value)
-                                            }}
+                                            onValueChange={field.onChange}
                                             value={field.value ?? ''}
                                         >
                                             <SelectTrigger
@@ -321,7 +365,7 @@ export const TransactionFormDialog = ({
                                     render={({ field }) => (
                                         <Select
                                             onValueChange={(value) => {
-                                                categoryTouched.current = true
+                                                setIsCategoryTouched(true)
                                                 setIsSuggested(false)
                                                 field.onChange(value)
                                             }}

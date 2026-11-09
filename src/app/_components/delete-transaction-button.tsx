@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Image from 'next/image'
+import { toast } from 'sonner'
 import DeleteIcon from '@/src/assets/delete-icon.png'
 import { deleteTransaction } from '../_actions/delete-transaction'
 import {
@@ -32,10 +33,12 @@ export const DeleteTransactionButton = ({
             try {
                 await deleteTransaction(id)
                 setOpen(false)
+                toast.success('Transação excluída')
             } catch {
-                setError(
+                const message =
                     'Não foi possível excluir a transação. Tente novamente.'
-                )
+                setError(message)
+                toast.error(message)
             }
         })
     }

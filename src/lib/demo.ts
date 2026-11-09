@@ -58,13 +58,22 @@ function buildTransactions(userId: string) {
 
         return ENTRIES.filter(
             (entry) => !entry.onlyIn || entry.onlyIn.includes(monthsAgo)
-        ).map(({ onlyIn: _onlyIn, fixed, day, amount, ...entry }) => ({
-            ...entry,
+        ).map((entry) => ({
+            name: entry.name,
+            type: entry.type,
+            category: entry.category,
+            paymentMethod: entry.paymentMethod,
             userId,
-            amount: fixed ? amount : Math.round(amount * variation * 100) / 100,
+            amount: entry.fixed
+                ? entry.amount
+                : Math.round(entry.amount * variation * 100) / 100,
             // No mês atual, nenhum lançamento fica no futuro.
             date: month
-                .date(monthsAgo === 0 ? Math.min(day, today.date()) : day)
+                .date(
+                    monthsAgo === 0
+                        ? Math.min(entry.day, today.date())
+                        : entry.day
+                )
                 .toDate(),
         }))
     })

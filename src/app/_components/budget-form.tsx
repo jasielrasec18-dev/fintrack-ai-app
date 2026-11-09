@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import type { TransactionCategory } from '@prisma/client'
+import { toast } from 'sonner'
 import { saveBudgets } from '../_actions/save-budgets'
 import {
     CATEGORY_ICON,
@@ -23,13 +24,10 @@ export const BudgetForm = ({ categories, initial }: BudgetFormProps) => {
             ])
         )
     )
-    const [message, setMessage] = useState<string | null>(null)
-    const [hasError, setHasError] = useState<boolean>(false)
     const [isPending, startTransition] = useTransition()
 
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault()
-        setMessage(null)
 
         const budgets = categories.map((category) => {
             const amount = Number(values[category])
@@ -39,11 +37,9 @@ export const BudgetForm = ({ categories, initial }: BudgetFormProps) => {
         startTransition(async () => {
             try {
                 await saveBudgets(budgets)
-                setHasError(false)
-                setMessage('Orçamentos salvos.')
+                toast.success('Orçamentos salvos')
             } catch {
-                setHasError(true)
-                setMessage('Não foi possível salvar. Tente novamente.')
+                toast.error('Não foi possível salvar. Tente novamente.')
             }
         })
     }
@@ -93,15 +89,7 @@ export const BudgetForm = ({ categories, initial }: BudgetFormProps) => {
                 })}
             </ul>
 
-            <div className="mt-8 flex flex-wrap items-center justify-end gap-4">
-                {message && (
-                    <p
-                        role="status"
-                        className={`text-sm ${hasError ? 'text-red-400' : 'text-success-text'}`}
-                    >
-                        {message}
-                    </p>
-                )}
+            <div className="mt-8 flex justify-end">
                 <button
                     type="submit"
                     disabled={isPending}
