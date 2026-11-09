@@ -24,3 +24,7 @@ export const createTransactionFormSchema = z.object({
 export type CreateTransactionFormData = z.infer<
     typeof createTransactionFormSchema
 >
+
+export type CreateTransactionFormInput = z.input<
+    typeof createTransactionFormSchema
+>

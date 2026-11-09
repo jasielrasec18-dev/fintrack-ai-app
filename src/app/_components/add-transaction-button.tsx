@@ -5,6 +5,12 @@ import { useState } from 'react'
 import Image from 'next/image'
 import PlusIcon from '@/src/assets/plus-icon.png'
 import ConfirmIcon from '@/src/assets/confirm-icon.png'
+import EditIcon from '@/src/assets/edit-icon.png'
+import type {
+    TransactionCategory,
+    TransactionPaymentMethod,
+    TransactionType,
+} from '@prisma/client'
 
 import {
     Dialog,
@@ -24,7 +30,7 @@ import {
     SelectValue,
 } from './ui/select'
 
-import { useForm, Controller, Resolver } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 import {
@@ -36,8 +42,10 @@ import {
 import {
     createTransactionFormSchema,
     type CreateTransactionFormData,
+    type CreateTransactionFormInput,
 } from '../_schemas/transaction'
 import { addTransaction } from '../_actions/add-transaction'
+import { updateTransaction } from '../_actions/update-transaction'
 import { useRouter } from 'next/navigation'
 
 const fieldClass =
@@ -45,11 +53,22 @@ const fieldClass =
 const labelClass = 'mb-2 text-sm font-medium text-white'
 
 interface AddTransactionButtonProps {
-    variant?: 'default' | 'fab'
+    variant?: 'default' | 'fab' | 'edit'
+    transaction?: {
+        id: string
+        name: string
+        amount: number
+        type: TransactionType
+        category: TransactionCategory
+        paymentMethod: TransactionPaymentMethod
+        /** Data no formato YYYY-MM-DD */
+        date: string
+    }
 }
 
 export const AddTransactionButton = ({
     variant = 'default',
+    transaction,
 }: AddTransactionButtonProps) => {
     const [open, setIsOpen] = useState<boolean>(false)
     const [serverError, setServerError] = useState<string | null>(null)
@@ -62,20 +81,20 @@ export const AddTransactionButton = ({
         reset,
         control,
         formState: { errors, isSubmitting },
-    } = useForm<CreateTransactionFormData>({
-        resolver: zodResolver(
-            createTransactionFormSchema
-        ) as unknown as Resolver<CreateTransactionFormData>,
-        defaultValues: {
-            name: '',
-            amount: undefined,
-            type: undefined,
-            category: undefined,
-            paymentMethod: undefined,
-            date: undefined,
-        },
-        mode: 'onBlur',
-    })
+    } = useForm<CreateTransactionFormInput, unknown, CreateTransactionFormData>(
+        {
+            resolver: zodResolver(createTransactionFormSchema),
+            defaultValues: {
+                name: transaction?.name ?? '',
+                amount: transaction?.amount,
+                type: transaction?.type,
+                category: transaction?.category,
+                paymentMethod: transaction?.paymentMethod,
+                date: transaction?.date,
+            },
+            mode: 'onBlur',
+        }
+    )
 
     const handleOpenChange = (nextOpen: boolean) => {
         setIsOpen(nextOpen)
@@ -88,7 +107,11 @@ export const AddTransactionButton = ({
     const onSubmit = async (data: CreateTransactionFormData) => {
         setServerError(null)
         try {
-            await addTransaction(data)
+            if (transaction) {
+                await updateTransaction(transaction.id, data)
+            } else {
+                await addTransaction(data)
+            }
             handleOpenChange(false)
             router.refresh()
         } catch {
@@ -102,28 +125,40 @@ export const AddTransactionButton = ({
         <section>
             <Dialog open={open} onOpenChange={handleOpenChange}>
                 <DialogTrigger asChild>
-                    <button
-                        type="button"
-                        aria-label={
-                            variant === 'fab'
-                                ? 'Adicionar transação'
-                                : undefined
-                        }
-                        className={
-                            variant === 'fab'
-                                ? 'fixed right-6 bottom-6 z-20 flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/30 transition-colors hover:bg-[#7E22CE] lg:hidden'
-                                : 'flex h-12 cursor-pointer items-center gap-2 rounded-xl bg-primary px-6 font-bold text-white shadow-lg shadow-primary/30 transition-colors hover:bg-[#7E22CE]'
-                        }
-                    >
-                        <Image src={PlusIcon} alt="" />
-                        {variant === 'default' && <span>Adicionar</span>}
-                    </button>
+                    {variant === 'edit' ? (
+                        <button
+                            type="button"
+                            aria-label={`Editar transação ${transaction?.name ?? ''}`}
+                            className="cursor-pointer rounded-md p-1 transition-colors hover:bg-white/10"
+                        >
+                            <Image src={EditIcon} alt="" />
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            aria-label={
+                                variant === 'fab'
+                                    ? 'Adicionar transação'
+                                    : undefined
+                            }
+                            className={
+                                variant === 'fab'
+                                    ? 'fixed right-6 bottom-6 z-20 flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/30 transition-colors hover:bg-[#7E22CE] lg:hidden'
+                                    : 'flex h-12 cursor-pointer items-center gap-2 rounded-xl bg-primary px-6 font-bold text-white shadow-lg shadow-primary/30 transition-colors hover:bg-[#7E22CE]'
+                            }
+                        >
+                            <Image src={PlusIcon} alt="" />
+                            {variant === 'default' && <span>Adicionar</span>}
+                        </button>
+                    )}
                 </DialogTrigger>
 
                 <DialogContent className="max-h-[90vh] max-w-[400px] gap-0 overflow-y-auto rounded-2xl border border-white/10 bg-[#1E293B] p-0 sm:max-w-[400px]">
                     <DialogHeader className="border-b border-white/10 px-6 py-5">
                         <DialogTitle className="text-lg font-semibold text-white">
-                            Nova transação
+                            {transaction
+                                ? 'Editar transação'
+                                : 'Nova transação'}
                         </DialogTitle>
                     </DialogHeader>
 
