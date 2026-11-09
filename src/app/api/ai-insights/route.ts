@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import { GoogleGenAI } from '@google/genai'
 import { TRANSACTION_CATEGORY_LABELS } from '../../_constants/transaction'
 import type { TransactionCategory } from '@prisma/client'
 
@@ -42,10 +42,10 @@ function formatBRL(value: number) {
 }
 
 export async function POST(req: Request) {
-    const apiKey = process.env.OPENAI_API_KEY
+    const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
         return NextResponse.json(
-            { error: 'OPENAI_API_KEY não configurada.' },
+            { error: 'GEMINI_API_KEY não configurada.' },
             { status: 500 }
         )
     }
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
         })
         .join('\n')
 
-    const openai = new OpenAI({ apiKey })
+    const gemini = new GoogleGenAI({ apiKey })
 
     const userContent = `Analise os dados financeiros do mês de ${monthName} de ${year} e dê sugestões objetivas para redução de custos e melhoria na gestão do dinheiro.
 
@@ -98,21 +98,18 @@ Responda em português do Brasil, em um texto direto e acionável (2 a 4 parágr
 3) Duas ou três dicas práticas para economizar no próximo mês.`
 
     try {
-        const completion = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            messages: [
-                {
-                    role: 'system',
-                    content:
-                        'Você é um consultor financeiro pessoal. Dê sugestões práticas e realistas para economia e gestão do dinheiro, em tom amigável e profissional.',
-                },
-                { role: 'user', content: userContent },
-            ],
-            max_tokens: 800,
+        const completion = await gemini.interactions.create({
+            model: 'gemini-3.8-flash',
+            input: userContent,
+            system_instruction:
+                'Você é um consultor financeiro pessoal. Dê sugestões práticas e realistas para economia e gestão do dinheiro, em tom amigável e profissional.',
+            generation_config: {
+                max_output_tokens: 800,
+            },
         })
 
         const suggestion =
-            completion.choices[0]?.message?.content?.trim() ??
+            completion.output_text?.trim() ??
             'Não foi possível gerar a análise no momento. Tente novamente.'
 
         const topCategory = totalExpensePerCategory.length
@@ -133,7 +130,7 @@ Responda em português do Brasil, em um texto direto e acionável (2 a 4 parágr
                 : null,
         })
     } catch (err) {
-        console.error('OpenAI API error:', err)
+        console.error('Gemini API error:', err)
         return NextResponse.json(
             { error: 'Erro ao gerar insights. Tente novamente mais tarde.' },
             { status: 500 }
