@@ -4,6 +4,7 @@
 
 **Controle financeiro pessoal com dashboard mensal, orçamentos e sugestões de economia geradas por IA.**
 
+[![CI](https://github.com/jasielrasec18-dev/fintrack-ai-app/actions/workflows/ci.yml/badge.svg)](https://github.com/jasielrasec18-dev/fintrack-ai-app/actions/workflows/ci.yml)
 ![Cobertura dos cálculos](https://img.shields.io/badge/cobertura_dos_c%C3%A1lculos-100%25-brightgreen)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev)
@@ -64,7 +65,7 @@ A interface foi construída a partir de um design próprio no Figma, em tema esc
 | Banco de dados | PostgreSQL (Neon), Prisma ORM |
 | Autenticação | Better Auth |
 | Inteligência artificial | Google Gemini (`@google/genai`) |
-| Testes | Vitest, Playwright |
+| Testes e CI | Vitest, Playwright, GitHub Actions |
 | Hospedagem | Vercel, incluindo Cron Jobs |
 
 ## Como a análise com IA funciona
@@ -151,6 +152,7 @@ A aplicação ficará disponível em [http://localhost:3000](http://localhost:30
 
 - **Unitários (Vitest):** cálculos financeiros, períodos, formatação de moeda e dicionário de categorias.
 - **Ponta a ponta (Playwright):** login como visitante, sugestão de categoria, criação, busca e exclusão de transações e orçamentos. As rotas de IA são simuladas, então os testes nunca chamam o Gemini.
+- **Integração contínua:** a cada push e pull request, o GitHub Actions roda lint, tipos, testes unitários e os testes de ponta a ponta com um PostgreSQL dedicado.
 
 Os testes de ponta a ponta precisam de banco com a conta demo e de um build:
 
@@ -164,6 +166,7 @@ npm run test:e2e
 ## Estrutura do projeto
 
 ```text
+.github/workflows/      Integração contínua
 e2e/                    Testes de ponta a ponta
 prisma/                 Schema, migrations e seed
 src/
