@@ -56,12 +56,12 @@ export const AddTransactionButton = () => {
             createTransactionFormSchema
         ) as unknown as Resolver<CreateTransactionFormData>,
         defaultValues: {
-            name: '' as any,
-            amount: '' as any,
-            type: '' as any,
-            category: '' as any,
-            paymentMethod: '' as any,
-            date: '' as any,
+            name: '',
+            amount: undefined,
+            type: undefined,
+            category: undefined,
+            paymentMethod: undefined,
+            date: undefined,
         },
         mode: 'onBlur',
     })
@@ -138,7 +138,7 @@ export const AddTransactionButton = () => {
                                 render={({ field }) => (
                                     <Select
                                         onValueChange={field.onChange}
-                                        value={field.value}
+                                        value={field.value ?? ''}
                                     >
                                         <SelectTrigger className="w-full">
                                             <SelectValue placeholder="Selecione o tipo" />
@@ -175,7 +175,7 @@ export const AddTransactionButton = () => {
                                 render={({ field }) => (
                                     <Select
                                         onValueChange={field.onChange}
-                                        value={field.value}
+                                        value={field.value ?? ''}
                                     >
                                         <SelectTrigger className="w-full">
                                             <SelectValue placeholder="Selecione a categoria" />
@@ -212,7 +212,7 @@ export const AddTransactionButton = () => {
                                 render={({ field }) => (
                                     <Select
                                         onValueChange={field.onChange}
-                                        value={field.value}
+                                        value={field.value ?? ''}
                                     >
                                         <SelectTrigger className="w-full">
                                             <SelectValue placeholder="Selecione o método de pagamento" />

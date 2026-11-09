@@ -32,8 +32,8 @@ export default function SignInPage() {
     } = useForm<SignInFormData>({
         resolver: zodResolver(signInFormSchema),
         defaultValues: {
-            email: '' as any,
-            password: '' as any,
+            email: '',
+            password: '',
         },
         mode: 'onBlur',
     })
@@ -41,7 +41,6 @@ export default function SignInPage() {
     const router = useRouter()
 
     const onSubmit = async (data: SignInFormData) => {
-        console.log(data)
         try {
             const { data: result, error: err } = await authClient.signIn.email({
                 email: data.email,
@@ -59,7 +58,7 @@ export default function SignInPage() {
             if (result) router.push('/')
 
             reset()
-        } catch (error) {
+        } catch {
             setApiError('Erro inesperado. Tente novamente.')
         }
     }

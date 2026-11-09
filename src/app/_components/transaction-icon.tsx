@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import Image, { type StaticImageData } from 'next/image'
 
 import Food from '@/src/assets/food-icon.png'
 import Box from '@/src/assets/box-icon.png'
@@ -11,7 +11,7 @@ interface TransactionIconProps {
 const ICON_CONFIG: Record<
     'DEPOSIT' | 'EXPENSE' | 'INVESTMENT',
     {
-        icon: any
+        icon: StaticImageData
         bg: string
         color: string
     }

@@ -33,15 +33,14 @@ export default function SignUpPage() {
     } = useForm<SignUpFormData>({
         resolver: zodResolver(signUpFormSchema),
         defaultValues: {
-            name: '' as any,
-            email: '' as any,
-            password: '' as any,
+            name: '',
+            email: '',
+            password: '',
         },
         mode: 'onBlur',
     })
 
     const onSubmit = async (data: SignUpFormData) => {
-        console.log(data)
         try {
             const { data: result, error: err } = await authClient.signUp.email({
                 name: data.name,
@@ -60,7 +59,7 @@ export default function SignUpPage() {
             if (result) router.push('/')
 
             reset()
-        } catch (error) {
+        } catch {
             setApiError('Erro inesperado. Tente novamente.')
         }
     }
