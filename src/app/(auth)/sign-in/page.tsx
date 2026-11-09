@@ -8,6 +8,7 @@ import z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { authClient } from '@/src/lib/auth-client'
+import { DEMO_EMAIL, DEMO_PASSWORD } from '@/src/lib/demo-config'
 import { useRouter } from 'next/navigation'
 import { Alert, AlertDescription } from '@/src/app/_components/ui/alert'
 import { useState } from 'react'
@@ -24,6 +25,7 @@ type SignInFormData = z.infer<typeof signInFormSchema>
 
 export default function SignInPage() {
     const [apiError, setApiError] = useState<string>('')
+    const [isVisitorLoading, setIsVisitorLoading] = useState<boolean>(false)
 
     const {
         handleSubmit,
@@ -61,6 +63,14 @@ export default function SignInPage() {
         } catch {
             setApiError('Erro inesperado. Tente novamente.')
         }
+    }
+
+    const handleVisitorSignIn = async () => {
+        if (!DEMO_EMAIL || !DEMO_PASSWORD) return
+
+        setIsVisitorLoading(true)
+        await onSubmit({ email: DEMO_EMAIL, password: DEMO_PASSWORD })
+        setIsVisitorLoading(false)
     }
 
     return (
@@ -129,6 +139,19 @@ export default function SignInPage() {
                     <span>{isSubmitting ? 'Entrando...' : 'Entrar'}</span>
                     <Image src={ArrowIcon} alt="" />
                 </button>
+
+                {DEMO_EMAIL && DEMO_PASSWORD && (
+                    <button
+                        type="button"
+                        onClick={handleVisitorSignIn}
+                        disabled={isSubmitting || isVisitorLoading}
+                        className="h-12 w-full cursor-pointer rounded-full border border-white/15 font-semibold text-white transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        {isVisitorLoading
+                            ? 'Entrando...'
+                            : 'Entrar como visitante'}
+                    </button>
+                )}
             </form>
         </AuthLayout>
     )

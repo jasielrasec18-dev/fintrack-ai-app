@@ -34,7 +34,11 @@ export default async function Home({ searchParams }: DashboardPageProps) {
         <div className="flex min-h-screen bg-app">
             <Sidebar />
             <div className="flex min-w-0 flex-1 flex-col">
-                <Header userName={data.session.user.name} date={new Date()} />
+                <Header
+                    userName={data.session.user.name}
+                    userEmail={data.session.user.email}
+                    date={new Date()}
+                />
                 <main className="p-4 md:p-8">
                     <div className="mx-auto w-full max-w-[1120px] space-y-8">
                         <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">

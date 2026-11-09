@@ -110,7 +110,11 @@ export const AddTransactionButton = ({
             if (transaction) {
                 await updateTransaction(transaction.id, data)
             } else {
-                await addTransaction(data)
+                const { error } = await addTransaction(data)
+                if (error) {
+                    setServerError(error)
+                    return
+                }
             }
             handleOpenChange(false)
             router.refresh()

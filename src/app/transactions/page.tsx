@@ -55,7 +55,11 @@ export default async function TransactionsPage() {
             <Sidebar />
 
             <div className="flex min-w-0 flex-1 flex-col">
-                <Header userName={session.user.name} date={new Date()} />
+                <Header
+                    userName={session.user.name}
+                    userEmail={session.user.email}
+                    date={new Date()}
+                />
 
                 <main className="p-4 md:p-8">
                     <section className="space-y-1">
