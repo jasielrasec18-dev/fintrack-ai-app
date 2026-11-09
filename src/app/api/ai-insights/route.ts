@@ -12,6 +12,8 @@ import {
     GEMINI_MODEL,
 } from '@/src/lib/gemini'
 import { prisma } from '@/src/lib/prisma'
+import { calcBudgetProgress } from '@/src/lib/finance'
+import { getBudgets } from '@/src/app/_data/get-budgets'
 import { getMonthSummary } from '@/src/app/_data/get-month-summary'
 import { TRANSACTION_CATEGORY_LABELS } from '@/src/app/_constants/transaction'
 import { MONTH_OPTIONS } from '@/src/app/_constants/months'
@@ -113,6 +115,17 @@ export async function POST(req: Request) {
             (option) => option.value === month
         )?.label
 
+        const budgets = calcBudgetProgress(
+            await getBudgets(session.user.id),
+            summary.totalExpensePerCategory
+        )
+        const budgetLines = budgets
+            .map(
+                (budget) =>
+                    `- ${TRANSACTION_CATEGORY_LABELS[budget.category]}: ${formatBRL(budget.spent)} de ${formatBRL(budget.limit)} orçados — ${budget.percentage}%`
+            )
+            .join('\n')
+
         const userPrompt = `Dados de ${monthName} de ${year}:
 - Ganhos: ${formatBRL(summary.depositsTotal)}
 - Gastos: ${formatBRL(summary.expensesTotal)}
@@ -127,7 +140,7 @@ ${
                 `- ${item.label}: ${formatBRL(item.totalAmount)} (${item.percentageOfTotal}% dos gastos)`
         )
         .join('\n') || 'Nenhum gasto registrado.'
-}`
+}${budgetLines && `\n\nOrçamentos do mês:\n${budgetLines}`}`
 
         const topCategory = {
             topCategory: top?.label ?? null,

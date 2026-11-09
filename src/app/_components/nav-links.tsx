@@ -3,12 +3,26 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { WalletIcon } from 'lucide-react'
 import dashboardIcon from '@/src/assets/dashboard-icon.png'
 import transactionsIcon from '@/src/assets/transactions-icon.png'
 
 const NAV_ITEMS = [
-    { href: '/', label: 'Dashboard', icon: dashboardIcon },
-    { href: '/transactions', label: 'Transações', icon: transactionsIcon },
+    {
+        href: '/',
+        label: 'Dashboard',
+        icon: <Image src={dashboardIcon} alt="" />,
+    },
+    {
+        href: '/transactions',
+        label: 'Transações',
+        icon: <Image src={transactionsIcon} alt="" />,
+    },
+    {
+        href: '/budgets',
+        label: 'Orçamentos',
+        icon: <WalletIcon className="h-[18px] w-[18px]" aria-hidden />,
+    },
 ]
 
 interface NavLinksProps {
@@ -35,7 +49,7 @@ export const NavLinks = ({ onNavigate }: NavLinksProps) => {
                                 : 'text-text-muted hover:bg-white/5 hover:text-white'
                         }`}
                     >
-                        <Image src={item.icon} alt="" />
+                        {item.icon}
                         <span className="text-base font-medium leading-normal">
                             {item.label}
                         </span>

@@ -1,5 +1,14 @@
-import { Sidebar } from '@/src/app/_components/sidebar'
-import { Header } from '@/src/app/_components/header'
+import Link from 'next/link'
+import {
+    type Prisma,
+    type Transaction,
+    TransactionCategory,
+    TransactionType,
+} from '@prisma/client'
+import { z } from 'zod'
+import { AppShell } from '@/src/app/_components/app-shell'
+import { TransactionActions } from '@/src/app/_components/transaction-actions'
+import { TransactionFilters } from '@/src/app/_components/transaction-filters'
 import {
     Table,
     TableBody,
@@ -8,21 +17,17 @@ import {
     TableHeader,
     TableRow,
 } from '@/src/app/_components/ui/table'
-import { auth } from '@/src/lib/auth'
-import { prisma } from '@/src/lib/prisma'
-import { headers } from 'next/headers'
-import { redirect } from 'next/navigation'
-import { TransactionType } from '@prisma/client'
-import {
-    TRANSACTION_TYPE_LABELS,
-    TRANSACTION_CATEGORY_LABELS,
-    TRANSACTION_PAYMENT_METHOD_LABELS,
-} from '../_constants/transaction'
-
 import dayjs from '@/src/lib/dayjs'
 import { formatBRL } from '@/src/lib/format'
-import { AddTransactionButton } from '@/src/app/_components/add-transaction-button'
-import { DeleteTransactionButton } from '@/src/app/_components/delete-transaction-button'
+import { prisma } from '@/src/lib/prisma'
+import { requireSession } from '@/src/lib/session'
+import {
+    TRANSACTION_CATEGORY_LABELS,
+    TRANSACTION_PAYMENT_METHOD_LABELS,
+    TRANSACTION_TYPE_LABELS,
+} from '../_constants/transaction'
+
+const PAGE_SIZE = 10
 
 const TYPE_BADGE_STYLES: Record<TransactionType, string> = {
     DEPOSIT: 'bg-[#00BC7D]/20 text-success-text',
@@ -30,177 +35,260 @@ const TYPE_BADGE_STYLES: Record<TransactionType, string> = {
     INVESTMENT: 'bg-[#2B7FFF]/20 text-info-text',
 }
 
-export default async function TransactionsPage() {
-    const session = await auth.api.getSession({
-        headers: await headers(),
-    })
+const dateParam = z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .refine((value) => !Number.isNaN(Date.parse(value)))
+    .optional()
+    .catch(undefined)
 
-    const userId = session?.user.id
+const filtersSchema = z.object({
+    q: z.string().trim().max(100).optional().catch(undefined),
+    type: z.enum(TransactionType).optional().catch(undefined),
+    category: z.enum(TransactionCategory).optional().catch(undefined),
+    from: dateParam,
+    to: dateParam,
+    page: z.coerce.number().int().min(1).catch(1),
+})
 
-    if (!userId) {
-        redirect('/sign-in')
+const headClass =
+    'h-auto px-4 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-text-muted'
+
+interface TransactionsPageProps {
+    searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+const TypeBadge = ({ type }: { type: TransactionType }) => (
+    <span
+        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${TYPE_BADGE_STYLES[type]}`}
+    >
+        {TRANSACTION_TYPE_LABELS[type]}
+    </span>
+)
+
+const Amount = ({ transaction }: { transaction: Transaction }) => (
+    <span
+        className={`font-semibold ${
+            transaction.type === 'EXPENSE'
+                ? 'text-danger-text'
+                : 'text-success-text'
+        }`}
+    >
+        {formatBRL(Number(transaction.amount))}
+    </span>
+)
+
+export default async function TransactionsPage({
+    searchParams,
+}: TransactionsPageProps) {
+    const session = await requireSession()
+    const params = await searchParams
+    const filters = filtersSchema.parse(params)
+    const { q, type, category, from, to } = filters
+
+    const where: Prisma.TransactionWhereInput = {
+        userId: session.user.id,
+        ...(q && { name: { contains: q, mode: 'insensitive' } }),
+        ...(type && { type }),
+        ...(category && { category }),
+        ...((from || to) && {
+            date: {
+                ...(from && { gte: new Date(from) }),
+                ...(to && { lte: new Date(to) }),
+            },
+        }),
     }
 
+    const total = await prisma.transaction.count({ where })
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+    const page = Math.min(filters.page, totalPages)
+
     const transactions = await prisma.transaction.findMany({
-        where: {
-            userId,
-        },
-        orderBy: {
-            date: 'desc',
-        },
+        where,
+        orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+        skip: (page - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
     })
 
+    const hasFilters = Boolean(q || type || category || from || to)
+    const emptyMessage = hasFilters
+        ? 'Nenhuma transação encontrada com esses filtros.'
+        : 'Nenhuma transação cadastrada.'
+
+    const pageHref = (target: number) => {
+        const query = new URLSearchParams()
+        for (const [key, value] of Object.entries(params)) {
+            if (typeof value === 'string' && key !== 'page') {
+                query.set(key, value)
+            }
+        }
+        query.set('page', String(target))
+        return `/transactions?${query.toString()}`
+    }
+
+    const firstItem = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1
+    const lastItem = Math.min(page * PAGE_SIZE, total)
+    const pageLinkClass =
+        'rounded-xl border border-white/15 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/5'
+    const pageDisabledClass =
+        'rounded-xl border border-white/5 px-4 py-2 text-sm font-medium text-text-subtle'
+
     return (
-        <div className="flex min-h-screen bg-app">
-            <Sidebar />
+        <AppShell user={session.user}>
+            <section className="space-y-1">
+                <h1 className="text-[30px] font-bold leading-[1.2] tracking-[-0.025em] text-white">
+                    Transações
+                </h1>
+                <p className="text-sm text-[#90A1B9]">
+                    Gerencie suas entradas, despesas e investimentos
+                </p>
+            </section>
 
-            <div className="flex min-w-0 flex-1 flex-col">
-                <Header
-                    userName={session.user.name}
-                    userEmail={session.user.email}
-                    date={new Date()}
-                />
+            <section className="mt-6">
+                <TransactionFilters />
+            </section>
 
-                <main className="p-4 md:p-8">
-                    <section className="space-y-1">
-                        <h1 className="text-[30px] font-bold leading-[1.2] tracking-[-0.025em] text-white">
-                            Transações
-                        </h1>
-                        <p className="text-sm text-[#90A1B9]">
-                            Gerencie suas entradas, despesas e investimentos
-                        </p>
-                    </section>
-
-                    <section className="mt-6 overflow-hidden rounded-3xl border border-white/10 bg-[rgba(30,41,59,0.8)] shadow-[0px_8px_10px_-6px_rgba(0,0,0,0.2),0px_20px_25px_-5px_rgba(0,0,0,0.2)]">
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader className="bg-white/5">
-                                    <TableRow className="border-b border-white/10 hover:bg-transparent">
-                                        <TableHead className="h-auto px-4 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-text-muted">
-                                            Nome
-                                        </TableHead>
-                                        <TableHead className="h-auto px-4 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-text-muted">
-                                            Categoria
-                                        </TableHead>
-                                        <TableHead className="h-auto px-4 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-text-muted">
-                                            Método
-                                        </TableHead>
-                                        <TableHead className="h-auto px-4 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-text-muted">
-                                            Tipo
-                                        </TableHead>
-                                        <TableHead className="h-auto px-4 py-4 text-xs font-semibold uppercase tracking-[0.05em] text-text-muted">
-                                            Data
-                                        </TableHead>
-                                        <TableHead className="h-auto px-4 py-4 text-right text-xs font-semibold uppercase tracking-[0.05em] text-text-muted">
-                                            Valor
-                                        </TableHead>
-                                        <TableHead className="h-auto px-4 py-4 text-right text-xs font-semibold uppercase tracking-[0.05em] text-text-muted">
-                                            Ações
-                                        </TableHead>
-                                    </TableRow>
-                                </TableHeader>
-
-                                <TableBody>
-                                    {transactions.length === 0 && (
-                                        <TableRow className="hover:bg-transparent">
-                                            <TableCell
-                                                colSpan={7}
-                                                className="px-4 py-10 text-center text-sm text-text-muted"
-                                            >
-                                                Nenhuma transação cadastrada.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                    {transactions.map((transaction) => (
-                                        <TableRow
-                                            key={transaction.id}
-                                            className="border-b border-white/5 hover:bg-transparent"
-                                        >
-                                            <TableCell className="px-4 py-5 text-sm font-medium text-white">
-                                                {transaction.name}
-                                            </TableCell>
-                                            <TableCell className="px-4 py-5 text-sm text-[#CAD5E2]">
-                                                {
-                                                    TRANSACTION_CATEGORY_LABELS[
-                                                        transaction.category
-                                                    ]
-                                                }
-                                            </TableCell>
-                                            <TableCell className="px-4 py-5 text-sm text-[#90A1B9]">
-                                                {
-                                                    TRANSACTION_PAYMENT_METHOD_LABELS[
-                                                        transaction
-                                                            .paymentMethod
-                                                    ]
-                                                }
-                                            </TableCell>
-                                            <TableCell className="px-4 py-5">
-                                                <span
-                                                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${TYPE_BADGE_STYLES[transaction.type]}`}
-                                                >
-                                                    {
-                                                        TRANSACTION_TYPE_LABELS[
-                                                            transaction.type
-                                                        ]
-                                                    }
-                                                </span>
-                                            </TableCell>
-                                            <TableCell className="px-4 py-5 text-sm text-[#90A1B9]">
-                                                {dayjs
-                                                    .utc(transaction.date)
-                                                    .format('DD/MM/YYYY')}
-                                            </TableCell>
-                                            <TableCell
-                                                className={`px-4 py-5 text-right text-sm font-semibold ${
-                                                    transaction.type ===
-                                                    'EXPENSE'
-                                                        ? 'text-danger-text'
-                                                        : 'text-success-text'
-                                                }`}
-                                            >
-                                                {formatBRL(
-                                                    Number(transaction.amount)
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="px-4 py-5">
-                                                <div className="flex items-center justify-end gap-3">
-                                                    <AddTransactionButton
-                                                        key={transaction.updatedAt.toISOString()}
-                                                        variant="edit"
-                                                        transaction={{
-                                                            id: transaction.id,
-                                                            name: transaction.name,
-                                                            amount: Number(
-                                                                transaction.amount
-                                                            ),
-                                                            type: transaction.type,
-                                                            category:
-                                                                transaction.category,
-                                                            paymentMethod:
-                                                                transaction.paymentMethod,
-                                                            date: dayjs
-                                                                .utc(
-                                                                    transaction.date
-                                                                )
-                                                                .format(
-                                                                    'YYYY-MM-DD'
-                                                                ),
-                                                        }}
-                                                    />
-                                                    <DeleteTransactionButton
-                                                        id={transaction.id}
-                                                        name={transaction.name}
-                                                    />
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+            {/* Celular: lista de cards */}
+            <section className="mt-6 space-y-3 md:hidden">
+                {transactions.length === 0 && (
+                    <p className="rounded-2xl border border-white/10 bg-[#1E293B]/80 px-4 py-10 text-center text-sm text-text-muted">
+                        {emptyMessage}
+                    </p>
+                )}
+                {transactions.map((transaction) => (
+                    <article
+                        key={transaction.id}
+                        className="space-y-3 rounded-2xl border border-white/10 bg-[#1E293B]/80 p-4"
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <p className="min-w-0 font-medium text-white">
+                                {transaction.name}
+                            </p>
+                            <p className="shrink-0 text-sm">
+                                <Amount transaction={transaction} />
+                            </p>
                         </div>
-                    </section>
-                </main>
-            </div>
-        </div>
+                        <p className="text-xs text-text-muted">
+                            {dayjs.utc(transaction.date).format('DD/MM/YYYY')} •{' '}
+                            {TRANSACTION_CATEGORY_LABELS[transaction.category]} •{' '}
+                            {
+                                TRANSACTION_PAYMENT_METHOD_LABELS[
+                                    transaction.paymentMethod
+                                ]
+                            }
+                        </p>
+                        <div className="flex items-center justify-between">
+                            <TypeBadge type={transaction.type} />
+                            <TransactionActions transaction={transaction} />
+                        </div>
+                    </article>
+                ))}
+            </section>
+
+            {/* A partir de md: tabela */}
+            <section className="mt-6 hidden overflow-hidden rounded-3xl border border-white/10 bg-[rgba(30,41,59,0.8)] shadow-[0px_8px_10px_-6px_rgba(0,0,0,0.2),0px_20px_25px_-5px_rgba(0,0,0,0.2)] md:block">
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader className="bg-white/5">
+                            <TableRow className="border-b border-white/10 hover:bg-transparent">
+                                <TableHead className={headClass}>Nome</TableHead>
+                                <TableHead className={headClass}>
+                                    Categoria
+                                </TableHead>
+                                <TableHead className={headClass}>
+                                    Método
+                                </TableHead>
+                                <TableHead className={headClass}>Tipo</TableHead>
+                                <TableHead className={headClass}>Data</TableHead>
+                                <TableHead className={`${headClass} text-right`}>
+                                    Valor
+                                </TableHead>
+                                <TableHead className={`${headClass} text-right`}>
+                                    Ações
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+
+                        <TableBody>
+                            {transactions.length === 0 && (
+                                <TableRow className="hover:bg-transparent">
+                                    <TableCell
+                                        colSpan={7}
+                                        className="px-4 py-10 text-center text-sm text-text-muted"
+                                    >
+                                        {emptyMessage}
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                            {transactions.map((transaction) => (
+                                <TableRow
+                                    key={transaction.id}
+                                    className="border-b border-white/5 hover:bg-transparent"
+                                >
+                                    <TableCell className="px-4 py-5 text-sm font-medium text-white">
+                                        {transaction.name}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-5 text-sm text-[#CAD5E2]">
+                                        {
+                                            TRANSACTION_CATEGORY_LABELS[
+                                                transaction.category
+                                            ]
+                                        }
+                                    </TableCell>
+                                    <TableCell className="px-4 py-5 text-sm text-[#90A1B9]">
+                                        {
+                                            TRANSACTION_PAYMENT_METHOD_LABELS[
+                                                transaction.paymentMethod
+                                            ]
+                                        }
+                                    </TableCell>
+                                    <TableCell className="px-4 py-5">
+                                        <TypeBadge type={transaction.type} />
+                                    </TableCell>
+                                    <TableCell className="px-4 py-5 text-sm text-[#90A1B9]">
+                                        {dayjs
+                                            .utc(transaction.date)
+                                            .format('DD/MM/YYYY')}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-5 text-right text-sm">
+                                        <Amount transaction={transaction} />
+                                    </TableCell>
+                                    <TableCell className="px-4 py-5">
+                                        <TransactionActions
+                                            transaction={transaction}
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            </section>
+
+            <nav
+                aria-label="Paginação"
+                className="mt-6 flex flex-wrap items-center justify-between gap-3"
+            >
+                <p className="text-sm text-text-muted">
+                    Mostrando {firstItem}–{lastItem} de {total}
+                </p>
+                <div className="flex gap-3">
+                    {page > 1 ? (
+                        <Link href={pageHref(page - 1)} className={pageLinkClass}>
+                            Anterior
+                        </Link>
+                    ) : (
+                        <span className={pageDisabledClass}>Anterior</span>
+                    )}
+                    {page < totalPages ? (
+                        <Link href={pageHref(page + 1)} className={pageLinkClass}>
+                            Próxima
+                        </Link>
+                    ) : (
+                        <span className={pageDisabledClass}>Próxima</span>
+                    )}
+                </div>
+            </nav>
+        </AppShell>
     )
 }

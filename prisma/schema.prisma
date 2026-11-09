@@ -66,9 +66,21 @@ model User {
   transactions  Transaction[]
   aiInsights    AiInsight[]
   aiUsage       AiUsage[]
+  budgets       Budget[]
 
   @@unique([email])
   @@map("user")
+}
+
+model Budget {
+  id       String              @id @default(uuid())
+  userId   String              @map("user_id")
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category TransactionCategory
+  amount   Decimal
+
+  @@unique([userId, category])
+  @@map("budgets")
 }
 
 model AiInsight {

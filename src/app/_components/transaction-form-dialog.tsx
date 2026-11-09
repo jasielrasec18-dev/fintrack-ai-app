@@ -52,7 +52,7 @@ const fieldClass =
     'h-10 rounded-xl border border-white/10 bg-[#334155]/50 px-3.5 text-sm placeholder:text-text-subtle'
 const labelClass = 'mb-2 text-sm font-medium text-white'
 
-interface AddTransactionButtonProps {
+interface TransactionFormDialogProps {
     variant?: 'default' | 'fab' | 'edit'
     transaction?: {
         id: string
@@ -66,10 +66,10 @@ interface AddTransactionButtonProps {
     }
 }
 
-export const AddTransactionButton = ({
+export const TransactionFormDialog = ({
     variant = 'default',
     transaction,
-}: AddTransactionButtonProps) => {
+}: TransactionFormDialogProps) => {
     const [open, setIsOpen] = useState<boolean>(false)
     const [serverError, setServerError] = useState<string | null>(null)
     const [isSuggested, setIsSuggested] = useState<boolean>(false)

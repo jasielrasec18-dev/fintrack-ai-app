@@ -39,6 +39,14 @@ const ENTRIES: DemoEntry[] = [
     { name: 'Aporte mensal', type: Type.INVESTMENT, category: Category.OTHER, paymentMethod: Method.BANK_TRANSFER, amount: 700, day: 6, fixed: true },
 ]
 
+// Limites que mostram uma categoria tranquila, uma no alerta e uma estourada.
+const BUDGETS = [
+    { category: Category.HOUSING, amount: 2500 },
+    { category: Category.FOOD, amount: 700 },
+    { category: Category.ENTERTAINMENT, amount: 60 },
+    { category: Category.TRANSPORTATION, amount: 500 },
+]
+
 /** Variação dos gastos não fixos em cada mês (0 = atual). */
 const MONTH_VARIATION = [1, 0.93, 1.08]
 
@@ -89,6 +97,10 @@ export async function resetDemo() {
     await prisma.$transaction([
         prisma.transaction.deleteMany({ where: { userId } }),
         prisma.transaction.createMany({ data: transactions }),
+        prisma.budget.deleteMany({ where: { userId } }),
+        prisma.budget.createMany({
+            data: BUDGETS.map((budget) => ({ ...budget, userId })),
+        }),
     ])
 
     return { transactions: transactions.length }

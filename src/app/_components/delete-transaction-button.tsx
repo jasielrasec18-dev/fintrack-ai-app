@@ -1,9 +1,17 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import Image from 'next/image'
 import DeleteIcon from '@/src/assets/delete-icon.png'
 import { deleteTransaction } from '../_actions/delete-transaction'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from './ui/dialog'
 
 interface DeleteTransactionButtonProps {
     id: string
@@ -14,16 +22,18 @@ export const DeleteTransactionButton = ({
     id,
     name,
 }: DeleteTransactionButtonProps) => {
+    const [open, setOpen] = useState<boolean>(false)
+    const [error, setError] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
 
     const handleDelete = () => {
-        if (!window.confirm(`Excluir a transação "${name}"?`)) return
-
+        setError(null)
         startTransition(async () => {
             try {
                 await deleteTransaction(id)
+                setOpen(false)
             } catch {
-                window.alert(
+                setError(
                     'Não foi possível excluir a transação. Tente novamente.'
                 )
             }
@@ -31,14 +41,57 @@ export const DeleteTransactionButton = ({
     }
 
     return (
-        <button
-            type="button"
-            aria-label={`Excluir transação ${name}`}
-            onClick={handleDelete}
-            disabled={isPending}
-            className="cursor-pointer rounded-md p-1 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+        <Dialog
+            open={open}
+            onOpenChange={(nextOpen) => {
+                setOpen(nextOpen)
+                setError(null)
+            }}
         >
-            <Image src={DeleteIcon} alt="" />
-        </button>
+            <DialogTrigger asChild>
+                <button
+                    type="button"
+                    aria-label={`Excluir transação ${name}`}
+                    className="cursor-pointer rounded-md p-1 transition-colors hover:bg-white/10"
+                >
+                    <Image src={DeleteIcon} alt="" />
+                </button>
+            </DialogTrigger>
+
+            <DialogContent className="max-w-[400px] rounded-2xl border border-white/10 bg-[#1E293B] sm:max-w-[400px]">
+                <DialogHeader>
+                    <DialogTitle className="text-lg font-semibold text-white">
+                        Excluir transação?
+                    </DialogTitle>
+                    <DialogDescription className="text-sm text-[#CBD5E1]">
+                        “{name}” será removida permanentemente.
+                    </DialogDescription>
+                </DialogHeader>
+
+                {error && (
+                    <p role="alert" className="text-sm text-red-400">
+                        {error}
+                    </p>
+                )}
+
+                <div className="flex gap-3">
+                    <button
+                        type="button"
+                        onClick={() => setOpen(false)}
+                        className="h-10 flex-1 cursor-pointer rounded-xl border border-white/15 text-sm font-medium text-white hover:bg-white/5"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={isPending}
+                        className="h-10 flex-1 cursor-pointer rounded-xl bg-danger text-sm font-semibold text-white hover:bg-[#E11D48] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        {isPending ? 'Excluindo...' : 'Excluir'}
+                    </button>
+                </div>
+            </DialogContent>
+        </Dialog>
     )
 }

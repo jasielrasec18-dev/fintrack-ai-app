@@ -3,7 +3,7 @@ import { formatBRL } from '@/src/lib/format'
 import { TransactionIcon } from '@/src/app/_components/transaction-icon'
 import Link from 'next/link'
 import type { TransactionType } from '@prisma/client'
-import { AddTransactionButton } from './add-transaction-button'
+import { TransactionFormDialog } from './transaction-form-dialog'
 import { getRecentTransactions } from '../_data/get-recent-transactions'
 import { TRANSACTION_CATEGORY_LABELS } from '../_constants/transaction'
 
@@ -25,7 +25,7 @@ export const RecentTransactions = async () => {
                 <p className="text-xl font-bold text-white">
                     Transações recentes
                 </p>
-                <AddTransactionButton />
+                <TransactionFormDialog />
             </div>
 
             <div className="overflow-hidden rounded-3xl border border-card-border bg-card">
