@@ -6,18 +6,28 @@ import { ChartCard } from './_components/chart-card'
 import { AiInsights } from './_components/ai-insights'
 import { RecentTransactions } from './_components/recent-transactions'
 import { getDashboard } from './_data/get-dashboard'
-import dayjs from 'dayjs'
+import dayjs from '@/src/lib/dayjs'
+import { z } from 'zod'
+
+const monthSchema = z.string().regex(/^(0[1-9]|1[0-2])$/)
+const yearSchema = z.coerce.number().int().min(2000).max(2100)
 
 interface DashboardPageProps {
-    searchParams: Promise<{ month?: string }>
+    searchParams: Promise<{ month?: string; year?: string }>
 }
 
 export default async function Home({ searchParams }: DashboardPageProps) {
-    const { month } = await searchParams
+    const { month, year } = await searchParams
 
-    const currentMonth = month ?? dayjs().format('MM')
+    const today = dayjs()
+    const parsedMonth = monthSchema.safeParse(month)
+    const parsedYear = yearSchema.safeParse(year)
+    const currentMonth = parsedMonth.success
+        ? parsedMonth.data
+        : today.format('MM')
+    const currentYear = parsedYear.success ? parsedYear.data : today.year()
 
-    const data = await getDashboard(currentMonth)
+    const data = await getDashboard(currentMonth, currentYear)
 
     return (
         <div className="flex min-h-screen bg-[#0F111A]">
@@ -42,6 +52,7 @@ export default async function Home({ searchParams }: DashboardPageProps) {
                     <section className="flex gap-8">
                         <div className="flex-1">
                             <ChartCard
+                                month={currentMonth}
                                 depositsTotal={data.depositsTotal}
                                 expensesTotal={data.expensesTotal}
                                 investmentsTotal={data.investmentsTotal}
@@ -51,15 +62,9 @@ export default async function Home({ searchParams }: DashboardPageProps) {
 
                         <div className="flex-1">
                             <AiInsights
+                                key={`${currentYear}-${currentMonth}`}
                                 month={currentMonth}
-                                year={dayjs().year()}
-                                depositsTotal={data.depositsTotal}
-                                expensesTotal={data.expensesTotal}
-                                investmentsTotal={data.investmentsTotal}
-                                balance={data.balance}
-                                totalExpensePerCategory={
-                                    data.totalExpensePerCategory
-                                }
+                                year={currentYear}
                             />
                         </div>
                     </section>

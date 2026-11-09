@@ -1,138 +1,159 @@
 import { NextResponse } from 'next/server'
-import { GoogleGenAI } from '@google/genai'
-import { TRANSACTION_CATEGORY_LABELS } from '../../_constants/transaction'
-import type { TransactionCategory } from '@prisma/client'
+import { headers } from 'next/headers'
+import { ApiError, GoogleGenAI } from '@google/genai'
+import { z } from 'zod'
+import { auth } from '@/src/lib/auth'
+import { formatBRL } from '@/src/lib/format'
+import { getMonthSummary } from '@/src/app/_data/get-month-summary'
+import { TRANSACTION_CATEGORY_LABELS } from '@/src/app/_constants/transaction'
+import { MONTH_OPTIONS } from '@/src/app/_constants/months'
 
-const MONTH_NAMES: Record<string, string> = {
-    '01': 'Janeiro',
-    '02': 'Fevereiro',
-    '03': 'Março',
-    '04': 'Abril',
-    '05': 'Maio',
-    '06': 'Junho',
-    '07': 'Julho',
-    '08': 'Agosto',
-    '09': 'Setembro',
-    '10': 'Outubro',
-    '11': 'Novembro',
-    '12': 'Dezembro',
-}
+export const runtime = 'nodejs'
+export const maxDuration = 30
 
-interface CategorySummary {
-    category: TransactionCategory
-    totalAmount: number
-    percentageOfTotal: number
-}
+const bodySchema = z.object({
+    month: z.string().regex(/^(0[1-9]|1[0-2])$/),
+    year: z.number().int().min(2000).max(2100),
+})
 
-interface Body {
-    month: string
-    year: number
-    depositsTotal: number
-    expensesTotal: number
-    investmentsTotal: number
-    balance: number
-    totalExpensePerCategory: CategorySummary[]
-}
+const insightSchema = z.object({
+    suggestion: z.string().trim().min(1),
+})
 
-function formatBRL(value: number) {
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-    }).format(value)
+const SYSTEM_PROMPT =
+    'Você é um consultor financeiro pessoal. Responda SEMPRE em JSON no formato {"suggestion": string}. A sugestão deve ter no máximo 2 frases (até 220 caracteres), em português do Brasil, prática e específica para a categoria que mais pesa.'
+
+function getGeminiErrorResponse(err: ApiError) {
+    const isInvalidKey =
+        err.status === 401 ||
+        err.status === 403 ||
+        (err.status === 400 && /api key/i.test(err.message))
+
+    if (isInvalidKey) {
+        return { error: 'Chave do Gemini inválida.', status: 502 }
+    }
+    if (err.status === 429) {
+        return {
+            error: 'Limite de uso do Gemini atingido. Tente novamente mais tarde.',
+            status: 429,
+        }
+    }
+    if (err.status === 404) {
+        return { error: 'Modelo de IA indisponível.', status: 502 }
+    }
+    return { error: 'Erro no serviço de IA.', status: 502 }
 }
 
 export async function POST(req: Request) {
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session) {
+        return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 })
+    }
+
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
+        console.error('[ai-insights] GEMINI_API_KEY ausente')
         return NextResponse.json(
-            { error: 'GEMINI_API_KEY não configurada.' },
-            { status: 500 }
+            { error: 'IA indisponível: chave não configurada.' },
+            { status: 503 }
         )
     }
 
-    let body: Body
-    try {
-        body = await req.json()
-    } catch {
+    const parsed = bodySchema.safeParse(await req.json().catch(() => null))
+    if (!parsed.success) {
         return NextResponse.json(
-            { error: 'Corpo da requisição inválido.' },
+            { error: 'Parâmetros inválidos.' },
             { status: 400 }
         )
     }
 
-    const {
-        month,
-        year,
-        depositsTotal = 0,
-        expensesTotal = 0,
-        investmentsTotal = 0,
-        balance = 0,
-        totalExpensePerCategory = [],
-    } = body
-
-    const monthName = MONTH_NAMES[month] ?? month
-    const categoryLabels = totalExpensePerCategory
-        .map((item: CategorySummary) => {
-            const label =
-                TRANSACTION_CATEGORY_LABELS[item.category] ?? item.category
-            return `${label}: ${formatBRL(item.totalAmount)} (${item.percentageOfTotal}% do total de despesas)`
-        })
-        .join('\n')
-
-    const gemini = new GoogleGenAI({ apiKey })
-
-    const userContent = `Analise os dados financeiros do mês de ${monthName} de ${year} e dê sugestões objetivas para redução de custos e melhoria na gestão do dinheiro.
-
-Dados do mês:
-- Ganhos (entradas/depósitos): ${formatBRL(depositsTotal)}
-- Gastos (despesas): ${formatBRL(expensesTotal)}
-- Investimentos: ${formatBRL(investmentsTotal)}
-- Saldo do mês: ${formatBRL(balance)}
-
-Gastos por categoria:
-${categoryLabels || 'Nenhum gasto por categoria registrado.'}
-
-Responda em português do Brasil, em um texto direto e acionável (2 a 4 parágrafos). Inclua:
-1) Uma análise breve do equilíbrio entre ganhos, gastos e investimentos.
-2) A categoria que mais pesa nos gastos e como reduzir.
-3) Duas ou três dicas práticas para economizar no próximo mês.`
+    const { month, year } = parsed.data
 
     try {
-        const completion = await gemini.interactions.create({
-            model: 'gemini-3.8-flash',
-            input: userContent,
-            system_instruction:
-                'Você é um consultor financeiro pessoal. Dê sugestões práticas e realistas para economia e gestão do dinheiro, em tom amigável e profissional.',
-            generation_config: {
-                max_output_tokens: 800,
+        const summary = await getMonthSummary(session.user.id, month, year)
+
+        if (
+            summary.depositsTotal +
+                summary.expensesTotal +
+                summary.investmentsTotal ===
+            0
+        ) {
+            return NextResponse.json({
+                empty: true,
+                suggestion: null,
+                topCategory: null,
+                topCategoryAmount: null,
+            })
+        }
+
+        const categories = summary.totalExpensePerCategory
+            .toSorted((a, b) => b.totalAmount - a.totalAmount)
+            .map((item) => ({
+                ...item,
+                label: TRANSACTION_CATEGORY_LABELS[item.category],
+            }))
+        const top = categories[0] ?? null
+
+        const monthName = MONTH_OPTIONS.find(
+            (option) => option.value === month
+        )?.label
+
+        const userPrompt = `Dados de ${monthName} de ${year}:
+- Ganhos: ${formatBRL(summary.depositsTotal)}
+- Gastos: ${formatBRL(summary.expensesTotal)}
+- Investimentos: ${formatBRL(summary.investmentsTotal)}
+- Saldo: ${formatBRL(summary.balance)}
+
+Gastos por categoria:
+${
+    categories
+        .map(
+            (item) =>
+                `- ${item.label}: ${formatBRL(item.totalAmount)} (${item.percentageOfTotal}% dos gastos)`
+        )
+        .join('\n') || 'Nenhum gasto registrado.'
+}`
+
+        const gemini = new GoogleGenAI({
+            apiKey,
+            httpOptions: { timeout: 20_000 },
+        })
+
+        const response = await gemini.models.generateContent({
+            model: process.env.GEMINI_MODEL ?? 'gemini-3.8-flash',
+            contents: userPrompt,
+            config: {
+                systemInstruction: SYSTEM_PROMPT,
+                temperature: 0.4,
+                // Folga para modelos com raciocínio, que consomem o mesmo limite.
+                maxOutputTokens: 1024,
+                responseMimeType: 'application/json',
+                responseJsonSchema: {
+                    type: 'object',
+                    properties: { suggestion: { type: 'string' } },
+                    required: ['suggestion'],
+                },
             },
         })
 
-        const suggestion =
-            completion.output_text?.trim() ??
-            'Não foi possível gerar a análise no momento. Tente novamente.'
-
-        const topCategory = totalExpensePerCategory.length
-            ? totalExpensePerCategory.reduce((a, b) =>
-                  a.totalAmount >= b.totalAmount ? a : b
-              )
-            : null
-        const topCategoryLabel = topCategory
-            ? (TRANSACTION_CATEGORY_LABELS[topCategory.category] ??
-              topCategory.category)
-            : null
+        const { suggestion } = insightSchema.parse(
+            JSON.parse(response.text ?? '{}')
+        )
 
         return NextResponse.json({
             suggestion,
-            topCategory: topCategoryLabel,
-            topCategoryAmount: topCategory
-                ? formatBRL(topCategory.totalAmount)
-                : null,
+            topCategory: top?.label ?? null,
+            topCategoryAmount: top ? formatBRL(top.totalAmount) : null,
         })
     } catch (err) {
-        console.error('Gemini API error:', err)
+        if (err instanceof ApiError) {
+            console.error('[ai-insights] Gemini', err.status, err.message)
+            const { error, status } = getGeminiErrorResponse(err)
+            return NextResponse.json({ error }, { status })
+        }
+        console.error('[ai-insights] erro inesperado', err)
         return NextResponse.json(
-            { error: 'Erro ao gerar insights. Tente novamente mais tarde.' },
+            { error: 'Erro ao gerar insights.' },
             { status: 500 }
         )
     }

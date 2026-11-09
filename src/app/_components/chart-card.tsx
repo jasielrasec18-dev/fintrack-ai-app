@@ -2,6 +2,7 @@ import { DonutChart } from './donut-chart'
 import { MonthSelect } from './month-select'
 
 export interface DonutChartProps {
+    month: string
     depositsTotal: number
     expensesTotal: number
     investmentsTotal: number
@@ -9,6 +10,7 @@ export interface DonutChartProps {
 }
 
 export const ChartCard = ({
+    month,
     depositsTotal,
     expensesTotal,
     investmentsTotal,
@@ -18,7 +20,7 @@ export const ChartCard = ({
         <div className="bg-[#161B26] py-9 px-8 rounded-3xl">
             <div className="flex items-center justify-between">
                 <h3>Gráficos</h3>
-                <MonthSelect />
+                <MonthSelect month={month} />
             </div>
 
             <div>
