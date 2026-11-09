@@ -40,8 +40,19 @@ import {
 import { addTransaction } from '../_actions/add-transaction'
 import { useRouter } from 'next/navigation'
 
-export const AddTransactionButton = () => {
+const fieldClass =
+    'h-10 rounded-xl border border-white/10 bg-[#334155]/50 px-3.5 text-sm placeholder:text-text-subtle'
+const labelClass = 'mb-2 text-sm font-medium text-white'
+
+interface AddTransactionButtonProps {
+    variant?: 'default' | 'fab'
+}
+
+export const AddTransactionButton = ({
+    variant = 'default',
+}: AddTransactionButtonProps) => {
     const [open, setIsOpen] = useState<boolean>(false)
+    const [serverError, setServerError] = useState<string | null>(null)
 
     const router = useRouter()
 
@@ -66,211 +77,276 @@ export const AddTransactionButton = () => {
         mode: 'onBlur',
     })
 
-    const onSubmit = async (data: CreateTransactionFormData) => {
-        try {
-            console.log(data)
-            await addTransaction(data)
+    const handleOpenChange = (nextOpen: boolean) => {
+        setIsOpen(nextOpen)
+        if (!nextOpen) {
             reset()
-            setIsOpen(false)
+            setServerError(null)
+        }
+    }
+
+    const onSubmit = async (data: CreateTransactionFormData) => {
+        setServerError(null)
+        try {
+            await addTransaction(data)
+            handleOpenChange(false)
             router.refresh()
-        } catch (err) {
-            console.error(err)
+        } catch {
+            setServerError(
+                'Não foi possível salvar a transação. Tente novamente.'
+            )
         }
     }
 
     return (
         <section>
-            <Dialog open={open} onOpenChange={setIsOpen}>
+            <Dialog open={open} onOpenChange={handleOpenChange}>
                 <DialogTrigger asChild>
                     <button
                         type="button"
-                        className="rounded-sm bg-[#9333EA] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 
-                                transition-colors flex items-center gap-2 cursor-pointer"
+                        aria-label={
+                            variant === 'fab'
+                                ? 'Adicionar transação'
+                                : undefined
+                        }
+                        className={
+                            variant === 'fab'
+                                ? 'fixed right-6 bottom-6 z-20 flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/30 transition-colors hover:bg-[#7E22CE] lg:hidden'
+                                : 'flex h-12 cursor-pointer items-center gap-2 rounded-xl bg-primary px-6 font-bold text-white shadow-lg shadow-primary/30 transition-colors hover:bg-[#7E22CE]'
+                        }
                     >
-                        <Image src={PlusIcon} alt="Plus Icon" />
-                        <p>Adicionar</p>
+                        <Image src={PlusIcon} alt="" />
+                        {variant === 'default' && <span>Adicionar</span>}
                     </button>
                 </DialogTrigger>
 
-                <DialogContent className="bg-[#1E293B]">
-                    <DialogHeader className="p-2">
-                        <DialogTitle>Nova transação</DialogTitle>
+                <DialogContent className="max-h-[90vh] max-w-[400px] gap-0 overflow-y-auto rounded-2xl border border-white/10 bg-[#1E293B] p-0 sm:max-w-[400px]">
+                    <DialogHeader className="border-b border-white/10 px-6 py-5">
+                        <DialogTitle className="text-lg font-semibold text-white">
+                            Nova transação
+                        </DialogTitle>
                     </DialogHeader>
 
-                    <form
-                        className="flex flex-col gap-4 pt-4"
-                        onSubmit={handleSubmit(onSubmit)}
-                    >
-                        <div className="space-y-2">
-                            <Label>Título</Label>
-                            <Input
-                                id="name"
-                                placeholder="Ex: Almoço, Freela..."
-                                {...register('name')}
-                            />
+                    <form onSubmit={handleSubmit(onSubmit)}>
+                        <div className="flex flex-col gap-5 px-6 py-5">
+                            <div>
+                                <Label htmlFor="name" className={labelClass}>
+                                    Título
+                                </Label>
+                                <Input
+                                    id="name"
+                                    className={fieldClass}
+                                    placeholder="Ex: Almoço, Freela..."
+                                    {...register('name')}
+                                />
 
-                            {errors.name && (
-                                <p className="text-xs text-red-500">
-                                    {errors.name.message}
-                                </p>
-                            )}
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Valor (R$)</Label>
-                            <Input
-                                id="amount"
-                                type="number"
-                                placeholder="0,00"
-                                {...register('amount', { valueAsNumber: true })}
-                            />
-                            {errors.amount && (
-                                <p className="text-xs text-red-500">
-                                    {errors.amount.message}
-                                </p>
-                            )}
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Tipo</Label>
-
-                            <Controller
-                                control={control}
-                                name="type"
-                                render={({ field }) => (
-                                    <Select
-                                        onValueChange={field.onChange}
-                                        value={field.value ?? ''}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Selecione o tipo" />
-                                        </SelectTrigger>
-
-                                        <SelectContent position="popper">
-                                            {TRANSACTION_TYPE_OPTIONS.map(
-                                                (opt) => (
-                                                    <SelectItem
-                                                        key={opt.value}
-                                                        value={opt.value}
-                                                    >
-                                                        {opt.label}
-                                                    </SelectItem>
-                                                )
-                                            )}
-                                        </SelectContent>
-                                    </Select>
+                                {errors.name && (
+                                    <p className="mt-1.5 text-xs text-red-400">
+                                        {errors.name.message}
+                                    </p>
                                 )}
-                            />
-
-                            {errors.type && (
-                                <p className="text-xs text-red-500">
-                                    {errors.type.message}
-                                </p>
-                            )}
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Categoria</Label>
-
-                            <Controller
-                                control={control}
-                                name="category"
-                                render={({ field }) => (
-                                    <Select
-                                        onValueChange={field.onChange}
-                                        value={field.value ?? ''}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Selecione a categoria" />
-                                        </SelectTrigger>
-
-                                        <SelectContent position="popper">
-                                            {TRANSACTION_CATEGORY_OPTIONS.map(
-                                                (opt) => (
-                                                    <SelectItem
-                                                        key={opt.value}
-                                                        value={opt.value}
-                                                    >
-                                                        {opt.label}
-                                                    </SelectItem>
-                                                )
-                                            )}
-                                        </SelectContent>
-                                    </Select>
+                            </div>
+                            <div>
+                                <Label htmlFor="amount" className={labelClass}>
+                                    Valor (R$)
+                                </Label>
+                                <Input
+                                    id="amount"
+                                    className={fieldClass}
+                                    type="number"
+                                    step="0.01"
+                                    inputMode="decimal"
+                                    placeholder="0,00"
+                                    {...register('amount', {
+                                        valueAsNumber: true,
+                                    })}
+                                />
+                                {errors.amount && (
+                                    <p className="mt-1.5 text-xs text-red-400">
+                                        {errors.amount.message}
+                                    </p>
                                 )}
-                            />
+                            </div>
+                            <div>
+                                <Label htmlFor="type" className={labelClass}>
+                                    Tipo
+                                </Label>
 
-                            {errors.category && (
-                                <p className="text-xs text-red-500">
-                                    {errors.category.message}
-                                </p>
-                            )}
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Método de pagamento</Label>
+                                <Controller
+                                    control={control}
+                                    name="type"
+                                    render={({ field }) => (
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            value={field.value ?? ''}
+                                        >
+                                            <SelectTrigger
+                                                id="type"
+                                                className={`w-full data-[size=default]:h-10 ${fieldClass}`}
+                                            >
+                                                <SelectValue placeholder="Selecione o tipo" />
+                                            </SelectTrigger>
 
-                            <Controller
-                                control={control}
-                                name="paymentMethod"
-                                render={({ field }) => (
-                                    <Select
-                                        onValueChange={field.onChange}
-                                        value={field.value ?? ''}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Selecione o método de pagamento" />
-                                        </SelectTrigger>
+                                            <SelectContent position="popper">
+                                                {TRANSACTION_TYPE_OPTIONS.map(
+                                                    (opt) => (
+                                                        <SelectItem
+                                                            key={opt.value}
+                                                            value={opt.value}
+                                                        >
+                                                            {opt.label}
+                                                        </SelectItem>
+                                                    )
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                />
 
-                                        <SelectContent position="popper">
-                                            {TRANSACTION_PAYMENT_METHOD_OPTIONS.map(
-                                                (opt) => (
-                                                    <SelectItem
-                                                        key={opt.value}
-                                                        value={opt.value}
-                                                    >
-                                                        {opt.label}
-                                                    </SelectItem>
-                                                )
-                                            )}
-                                        </SelectContent>
-                                    </Select>
+                                {errors.type && (
+                                    <p className="mt-1.5 text-xs text-red-400">
+                                        {errors.type.message}
+                                    </p>
                                 )}
-                            />
+                            </div>
+                            <div>
+                                <Label
+                                    htmlFor="category"
+                                    className={labelClass}
+                                >
+                                    Categoria
+                                </Label>
 
-                            {errors.paymentMethod && (
-                                <p className="text-xs text-red-500">
-                                    {errors.paymentMethod.message}
-                                </p>
-                            )}
+                                <Controller
+                                    control={control}
+                                    name="category"
+                                    render={({ field }) => (
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            value={field.value ?? ''}
+                                        >
+                                            <SelectTrigger
+                                                id="category"
+                                                className={`w-full data-[size=default]:h-10 ${fieldClass}`}
+                                            >
+                                                <SelectValue placeholder="Selecione a categoria" />
+                                            </SelectTrigger>
+
+                                            <SelectContent position="popper">
+                                                {TRANSACTION_CATEGORY_OPTIONS.map(
+                                                    (opt) => (
+                                                        <SelectItem
+                                                            key={opt.value}
+                                                            value={opt.value}
+                                                        >
+                                                            {opt.label}
+                                                        </SelectItem>
+                                                    )
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                />
+
+                                {errors.category && (
+                                    <p className="mt-1.5 text-xs text-red-400">
+                                        {errors.category.message}
+                                    </p>
+                                )}
+                            </div>
+                            <div>
+                                <Label
+                                    htmlFor="paymentMethod"
+                                    className={labelClass}
+                                >
+                                    Método de pagamento
+                                </Label>
+
+                                <Controller
+                                    control={control}
+                                    name="paymentMethod"
+                                    render={({ field }) => (
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            value={field.value ?? ''}
+                                        >
+                                            <SelectTrigger
+                                                id="paymentMethod"
+                                                className={`w-full data-[size=default]:h-10 ${fieldClass}`}
+                                            >
+                                                <SelectValue placeholder="Selecione o método" />
+                                            </SelectTrigger>
+
+                                            <SelectContent position="popper">
+                                                {TRANSACTION_PAYMENT_METHOD_OPTIONS.map(
+                                                    (opt) => (
+                                                        <SelectItem
+                                                            key={opt.value}
+                                                            value={opt.value}
+                                                        >
+                                                            {opt.label}
+                                                        </SelectItem>
+                                                    )
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                />
+
+                                {errors.paymentMethod && (
+                                    <p className="mt-1.5 text-xs text-red-400">
+                                        {errors.paymentMethod.message}
+                                    </p>
+                                )}
+                            </div>
+                            <div>
+                                <Label htmlFor="date" className={labelClass}>
+                                    Data
+                                </Label>
+                                <Input
+                                    type="date"
+                                    id="date"
+                                    className={`${fieldClass} scheme-dark`}
+                                    placeholder="__/__/____"
+                                    {...register('date')}
+                                />
+
+                                {errors.date && (
+                                    <p className="mt-1.5 text-xs text-red-400">
+                                        {errors.date.message}
+                                    </p>
+                                )}
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label>Data</Label>
-                            <Input
-                                type="date"
-                                id="date"
-                                placeholder="__/__/____"
-                                {...register('date')}
-                            />
 
-                            {errors.date && (
-                                <p className="text-xs text-red-500">
-                                    {errors.date.message}
-                                </p>
-                            )}
-                        </div>
+                        {serverError && (
+                            <p
+                                role="alert"
+                                className="px-6 pb-4 text-sm text-red-400"
+                            >
+                                {serverError}
+                            </p>
+                        )}
 
-                        <DialogFooter className="gap-4 border-none">
-                            <button className="border border-[#CAD5E2] rounded-lg w-1/3 py-2.5 cursor-pointer">
+                        <DialogFooter className="mx-0 mb-0 flex-row gap-3 rounded-none border-none bg-transparent p-0 px-6 pb-6 sm:flex-row">
+                            <button
+                                type="button"
+                                onClick={() => handleOpenChange(false)}
+                                className="h-10 flex-1 cursor-pointer rounded-xl border border-white/15 text-sm font-medium text-white hover:bg-white/5"
+                            >
                                 Cancelar
                             </button>
                             <button
                                 type="submit"
-                                className="bg-[#8E51FF] w-2/3 flex items-center justify-center gap-2 rounded-xl cursor-pointer"
+                                className="flex h-10 flex-[2] cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-soft text-sm font-semibold text-white shadow-lg shadow-primary-soft/30 disabled:cursor-not-allowed disabled:opacity-60"
                                 disabled={isSubmitting}
                             >
-                                <Image src={ConfirmIcon} alt="Confirm Icon" />
-                                <p className="font-semibold text-sm">
+                                <Image src={ConfirmIcon} alt="" />
+                                <span>
                                     {isSubmitting
                                         ? 'Salvando...'
                                         : 'Salvar transação'}
-                                </p>
+                                </span>
                             </button>
                         </DialogFooter>
                     </form>

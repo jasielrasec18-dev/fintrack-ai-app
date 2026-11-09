@@ -17,9 +17,9 @@ export const ChartCard = ({
     balance,
 }: DonutChartProps) => {
     return (
-        <div className="bg-[#161B26] py-9 px-8 rounded-3xl">
-            <div className="flex items-center justify-between">
-                <h3>Gráficos</h3>
+        <div className="rounded-3xl border border-card-border bg-card p-8">
+            <div className="flex items-center justify-between gap-3">
+                <h3 className="text-xl font-bold text-white">Gráficos</h3>
                 <MonthSelect month={month} />
             </div>
 

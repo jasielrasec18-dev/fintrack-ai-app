@@ -15,88 +15,60 @@ export function DonutChart({
     investmentsTotal,
     balance,
 }: DonutChartProps) {
-    // Dados monetários base
-    const data = [
-        {
-            name: 'Ganhos',
-            value: Math.round(depositsTotal * 100) / 100,
-            fill: '#9333EA',
-        },
-        {
-            name: 'Gastos',
-            value: Math.round(expensesTotal * 100) / 100,
-            fill: '#F43F5E',
-        },
-        {
-            name: 'Invest.',
-            value: Math.round(investmentsTotal * 100) / 100,
-            fill: '#3B82F6',
-        },
-    ].filter((item) => item.value > 0)
-
-    // Total baseado apenas no que está sendo exibido
+    const legend = [
+        { name: 'Ganhos', value: depositsTotal, fill: '#9333EA' },
+        { name: 'Gastos', value: expensesTotal, fill: '#F43F5E' },
+        { name: 'Invest.', value: investmentsTotal, fill: '#3B82F6' },
+    ]
+    const data = legend.filter((item) => item.value > 0)
     const total = data.reduce((acc, item) => acc + item.value, 0)
 
-    // Percentual individual
-    const getPercent = (value: number) => {
-        return total > 0 ? Math.round((value / total) * 100) : 0
-    }
+    const getPercent = (value: number) =>
+        total > 0 ? Math.round((value / total) * 100) : 0
 
-    // Percentual do saldo
-    const balancePercent = total > 0 ? Math.round((balance / total) * 100) : 0
-
-    if (data.length === 0) {
-        return (
-            <div className="w-full flex items-center justify-center py-16 text-muted-foreground">
-                <span className="text-sm">Nenhuma transação neste mês</span>
-            </div>
-        )
-    }
+    // Parcela do que entrou e não foi gasta nem investida.
+    const generalPercent =
+        depositsTotal > 0 ? Math.round((balance / depositsTotal) * 100) : 0
 
     return (
-        <div className="w-full flex flex-col">
-            {/* Área fixa do gráfico */}
-            <div className="relative w-full h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                        <Pie
-                            data={data}
-                            dataKey="value"
-                            nameKey="name"
-                            innerRadius={80}
-                            outerRadius={90}
-                            paddingAngle={data.length > 1 ? 6 : 0}
-                            stroke="none"
-                        />
-                    </PieChart>
-                </ResponsiveContainer>
-
-                {/* Centro do Donut */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-xs text-muted-foreground">SALDO</span>
-
-                    <span className="text-2xl font-bold">
-                        {balance.toLocaleString('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL',
-                            maximumFractionDigits: 0,
-                        })}
-                    </span>
-
-                    {total > 0 && (
-                        <span className="text-xs text-muted-foreground mt-0.5">
-                            {balancePercent}% do total
-                        </span>
-                    )}
+        <div className="flex w-full flex-col">
+            {data.length === 0 ? (
+                <div className="flex h-64 w-full items-center justify-center text-text-muted">
+                    <span className="text-sm">Nenhuma transação neste mês</span>
                 </div>
-            </div>
+            ) : (
+                <div className="relative h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie
+                                data={data}
+                                dataKey="value"
+                                nameKey="name"
+                                innerRadius={81}
+                                outerRadius={91}
+                                paddingAngle={data.length > 1 ? 6 : 0}
+                                cornerRadius={4}
+                                stroke="none"
+                            />
+                        </PieChart>
+                    </ResponsiveContainer>
 
-            {/* Legenda */}
-            <div className="mt-8 flex w-full flex-wrap justify-center gap-6 border-t border-card-dark pt-6">
-                {data.map((entry) => (
+                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-[10px] font-bold tracking-widest text-text-subtle">
+                            GERAL
+                        </span>
+                        <span className="text-3xl font-bold text-white">
+                            {generalPercent}%
+                        </span>
+                    </div>
+                </div>
+            )}
+
+            <div className="mt-8 grid grid-cols-3 divide-x divide-card-border border-t border-card-border pt-6">
+                {legend.map((entry) => (
                     <div
                         key={entry.name}
-                        className="flex flex-col items-center gap-1 min-w-[100px]"
+                        className="flex flex-col items-center gap-1"
                     >
                         <div className="flex items-center gap-2">
                             <span
@@ -104,12 +76,11 @@ export function DonutChart({
                                 style={{ backgroundColor: entry.fill }}
                                 aria-hidden
                             />
-                            <span className="text-[10px] font-bold uppercase tracking-[-0.05em] text-border-aside">
+                            <span className="text-[10px] font-bold uppercase text-text-subtle">
                                 {entry.name}
                             </span>
                         </div>
-
-                        <span className="text-lg font-bold text-text-primary">
+                        <span className="text-lg font-bold text-white">
                             {getPercent(entry.value)}%
                         </span>
                     </div>

@@ -1,57 +1,85 @@
-import dayjs from 'dayjs'
-import 'dayjs/locale/pt-br'
+import dayjs from '@/src/lib/dayjs'
+import { formatBRL } from '@/src/lib/format'
 import { TransactionIcon } from '@/src/app/_components/transaction-icon'
 import Link from 'next/link'
+import type { TransactionType } from '@prisma/client'
 import { AddTransactionButton } from './add-transaction-button'
 import { getRecentTransactions } from '../_data/get-recent-transactions'
+import { TRANSACTION_CATEGORY_LABELS } from '../_constants/transaction'
+
+const AMOUNT_STYLES: Record<
+    TransactionType,
+    { color: string; prefix: string }
+> = {
+    DEPOSIT: { color: 'text-success', prefix: '+' },
+    EXPENSE: { color: 'text-danger', prefix: '-' },
+    INVESTMENT: { color: 'text-info', prefix: '' },
+}
 
 export const RecentTransactions = async () => {
     const recentTransactions = await getRecentTransactions()
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-5">
-                <p className="text-xl font-bold">Transações recentes</p>
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xl font-bold text-white">
+                    Transações recentes
+                </p>
                 <AddTransactionButton />
             </div>
 
-            <div className="bg-[#161b26] rounded-3xl border border-[#1d293d] overflow-hidden">
-                {recentTransactions.map((transaction) => (
-                    <div
-                        key={transaction.id}
-                        className="p-5 flex gap-4 border-b last:border-none border-[#1d293d] hover:bg-slate-800/50 transition-colors"
-                    >
-                        <TransactionIcon type={transaction.type} />
+            <div className="overflow-hidden rounded-3xl border border-card-border bg-card">
+                {recentTransactions.length === 0 ? (
+                    <p className="px-5 py-10 text-center text-sm text-text-muted">
+                        Nenhuma transação ainda. Clique em Adicionar para
+                        começar.
+                    </p>
+                ) : (
+                    <div>
+                        {recentTransactions.map((transaction) => {
+                            const { color, prefix } =
+                                AMOUNT_STYLES[transaction.type]
 
-                        <div className="flex-1">
-                            <p>{transaction.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                                {dayjs(transaction.date).format('DD [de] MMMM')}{' '}
-                                • {transaction.category}
-                            </p>
-                        </div>
+                            return (
+                                <div
+                                    key={transaction.id}
+                                    className="flex items-center gap-4 border-b border-card-border px-5 py-5 transition-colors last:border-none hover:bg-slate-800/50"
+                                >
+                                    <TransactionIcon
+                                        category={transaction.category}
+                                    />
 
-                        <span
-                            className={
-                                transaction.type === 'EXPENSE'
-                                    ? 'text-rose-500'
-                                    : 'text-emerald-500'
-                            }
-                        >
-                            {transaction.type === 'EXPENSE' ? '-' : '+'}
-                            {Number(transaction.amount).toLocaleString(
-                                'pt-BR',
-                                {
-                                    style: 'currency',
-                                    currency: 'BRL',
-                                }
-                            )}
-                        </span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate font-semibold text-white">
+                                            {transaction.name}
+                                        </p>
+                                        <p className="text-xs text-text-subtle">
+                                            {dayjs
+                                                .utc(transaction.date)
+                                                .format('DD [de] MMMM')}{' '}
+                                            •{' '}
+                                            {
+                                                TRANSACTION_CATEGORY_LABELS[
+                                                    transaction.category
+                                                ]
+                                            }
+                                        </p>
+                                    </div>
+
+                                    <span
+                                        className={`shrink-0 text-lg font-bold whitespace-nowrap ${color}`}
+                                    >
+                                        {prefix}
+                                        {formatBRL(Number(transaction.amount))}
+                                    </span>
+                                </div>
+                            )
+                        })}
                     </div>
-                ))}
-                <div className="p-4 bg-slate-800/20 text-center">
+                )}
+                <div className="border-t border-card-border py-4 text-center">
                     <Link
-                        className="text-primary text-sm hover:underline"
+                        className="text-sm font-semibold text-[#A855F7] hover:underline"
                         href="/transactions"
                     >
                         Ver todo o histórico

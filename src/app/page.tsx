@@ -5,6 +5,7 @@ import { FinancialMetricCard } from './_components/financial-metric-card'
 import { ChartCard } from './_components/chart-card'
 import { AiInsights } from './_components/ai-insights'
 import { RecentTransactions } from './_components/recent-transactions'
+import { AddTransactionButton } from './_components/add-transaction-button'
 import { getDashboard } from './_data/get-dashboard'
 import dayjs from '@/src/lib/dayjs'
 import { z } from 'zod'
@@ -47,6 +48,7 @@ export default async function Home({ searchParams }: DashboardPageProps) {
                             <FinancialMetricCard
                                 difference={data.difference}
                                 percentage={data.percentage}
+                                previousBalance={data.previousBalance}
                             />
                         </section>
 
@@ -74,6 +76,7 @@ export default async function Home({ searchParams }: DashboardPageProps) {
                             <RecentTransactions />
                         </section>
                     </div>
+                    <AddTransactionButton variant="fab" />
                 </main>
             </div>
         </div>
