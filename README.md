@@ -2,8 +2,9 @@
 
 # FinTrack AI
 
-**Controle financeiro pessoal com dashboard mensal e sugestões de economia geradas por IA.**
+**Controle financeiro pessoal com dashboard mensal, orçamentos e sugestões de economia geradas por IA.**
 
+![Cobertura dos cálculos](https://img.shields.io/badge/cobertura_dos_c%C3%A1lculos-100%25-brightgreen)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -13,25 +14,44 @@
 
 [**Acessar a aplicação**](https://fintrack-ai-app-h3zo.vercel.app) · [Design no Figma](https://www.figma.com/design/QNEXVeiU27cX2V4Ut4i6f0/Fintrack-AI)
 
-![Dashboard do FinTrack AI](docs/dashboard.png)
+Para conhecer sem criar conta, use **Entrar como visitante** na tela de login.
+
+![Demonstração do FinTrack AI](docs/demo.gif)
 
 </div>
 
 ## Sobre o projeto
 
-O FinTrack AI reúne entradas, despesas e investimentos em um único painel. A cada mês, o app mostra o saldo, compara o resultado com o mês anterior, aponta a categoria que mais pesou nos gastos e usa IA para sugerir uma ação prática de economia.
+O FinTrack AI reúne entradas, despesas e investimentos em um único painel. A cada mês, o app mostra o saldo, compara o resultado com o mês anterior, acompanha os limites de cada categoria e usa IA para sugerir uma ação prática de economia.
 
 A interface foi construída a partir de um design próprio no Figma, em tema escuro, com layout responsivo e totalmente em português do Brasil.
 
+![Dashboard do FinTrack AI](docs/dashboard.png)
+
 ## Funcionalidades
 
-- **Autenticação:** cadastro e login com e-mail e senha, com rotas protegidas.
-- **Dashboard mensal:** saldo, receitas, despesas e seletor de mês.
-- **Economia do mês:** variação em relação ao mês anterior.
-- **Gráfico de distribuição:** proporção entre ganhos, gastos e investimentos.
-- **Insights com IA:** categoria com maior gasto e uma sugestão curta de economia, refeitas ao trocar de mês.
-- **Gestão de transações:** criação, edição e exclusão, com 3 tipos, 9 categorias e 7 métodos de pagamento.
-- **Layout responsivo:** versões para desktop, tablet e celular.
+**Dashboard**
+
+- Saldo, receitas, despesas e variação em relação ao mês anterior
+- Gráfico de distribuição e evolução dos últimos 6 meses
+- Gastos por categoria e acompanhamento de orçamentos, com alertas visuais
+
+**Transações**
+
+- Criação, edição e exclusão, com máscara de moeda e confirmação
+- Busca, filtros por tipo, categoria e período, e paginação sincronizados com a URL
+- Tabela no desktop e lista de cards no celular
+
+**Inteligência artificial**
+
+- Sugestão de economia baseada nos dados do mês e nos orçamentos
+- Sugestão automática de categoria ao digitar o título da transação
+
+**Experiência**
+
+- Conta de demonstração com 3 meses de dados, reiniciada todos os dias
+- Telas de carregamento e de erro, notificações e atalho `N` para nova transação
+- Foco visível, contraste revisado e rótulos para leitores de tela
 
 ## Tecnologias
 
@@ -39,12 +59,13 @@ A interface foi construída a partir de um design próprio no Figma, em tema esc
 | --- | --- |
 | Framework | Next.js 16 (App Router, Server Components, Server Actions), React 19 |
 | Linguagem | TypeScript em modo strict |
-| Interface | Tailwind CSS 4, shadcn/ui, Radix UI, Recharts |
+| Interface | Tailwind CSS 4, shadcn/ui, Radix UI, Recharts, Sonner |
 | Formulários | React Hook Form, Zod |
 | Banco de dados | PostgreSQL (Neon), Prisma ORM |
 | Autenticação | Better Auth |
 | Inteligência artificial | Google Gemini (`@google/genai`) |
-| Hospedagem | Vercel |
+| Testes | Vitest, Playwright |
+| Hospedagem | Vercel, incluindo Cron Jobs |
 
 ## Como a análise com IA funciona
 
@@ -55,17 +76,21 @@ flowchart LR
     B -- Sim --> D[Servidor calcula os totais do usuário]
     D --> E{Há transações no mês?}
     E -- Não --> F[Estado vazio, sem chamar a IA]
-    E -- Sim --> G[Gemini gera a sugestão]
-    G --> H[Categoria com maior gasto + sugestão]
+    E -- Sim --> G{Os dados mudaram desde a última análise?}
+    G -- Não --> H[Resposta do cache]
+    G -- Sim --> I{Dentro do limite diário?}
+    I -- Não --> J[429]
+    I -- Sim --> K[Gemini gera e o resultado é salvo]
 ```
 
 Algumas decisões importantes do projeto:
 
 - **Os dados vêm do servidor.** O cliente envia só o mês e o ano. Os valores são calculados a partir da sessão, então não é possível enviar números falsos à IA nem consultar dados de outro usuário.
-- **A IA só é usada quando faz diferença.** Meses sem transações não geram chamada, e a categoria com maior gasto é calculada diretamente no servidor.
+- **A IA só é usada quando faz diferença.** Meses sem transações não geram chamada, títulos conhecidos são categorizados por um dicionário local e a análise fica em cache até os dados mudarem.
+- **O uso é limitado por usuário.** São até 10 análises e 100 categorizações com IA por dia.
 - **A chave da API fica no servidor.** O navegador nunca tem acesso a ela.
 - **Falhas têm mensagem própria.** Chave inválida, limite de uso e sobrecarga do serviço são tratados separadamente, com uma nova tentativa automática em caso de sobrecarga.
-- **Requisições antigas são canceladas.** Trocar de mês rapidamente não deixa uma resposta atrasada sobrescrever a análise atual.
+- **O dashboard faz poucas consultas.** Uma única consulta agrupada alimenta os totais, o mês anterior, as categorias e a evolução.
 
 ## Como rodar localmente
 
@@ -84,10 +109,11 @@ npm install
 cp .env.example .env
 ```
 
-Preencha o `.env` conforme a tabela abaixo e, em seguida, crie as tabelas e inicie o projeto:
+Preencha o `.env` conforme a tabela abaixo. Em seguida, crie as tabelas, gere a conta de demonstração e inicie o projeto:
 
 ```bash
 npx prisma migrate dev
+npx prisma db seed
 npm run dev
 ```
 
@@ -102,7 +128,10 @@ A aplicação ficará disponível em [http://localhost:3000](http://localhost:30
 | `BETTER_AUTH_SECRET` | Sim | Segredo das sessões. Gere com `openssl rand -base64 32`. |
 | `BETTER_AUTH_URL` | Sim | URL pública da aplicação, sem barra no final. |
 | `GEMINI_API_KEY` | Sim | Chave da API do Gemini. |
-| `GEMINI_MODEL` | Não | Modelo usado nos insights. O padrão é `gemini-3.8-flash`. |
+| `GEMINI_MODEL` | Não | Modelo usado pela IA. O padrão é `gemini-3.8-flash`. |
+| `NEXT_PUBLIC_DEMO_EMAIL` | Não | E-mail da conta de demonstração. Sem ele, o botão de visitante não aparece. |
+| `NEXT_PUBLIC_DEMO_PASSWORD` | Não | Senha da conta de demonstração, pública por design. |
+| `CRON_SECRET` | Não | Protege a rota que reinicia a conta de demonstração. |
 
 ### Scripts
 
@@ -112,23 +141,43 @@ A aplicação ficará disponível em [http://localhost:3000](http://localhost:30
 | `npm run build` | Gera o Prisma Client e o build de produção |
 | `npm run start` | Executa o build de produção |
 | `npm run lint` | Verifica o código com o ESLint |
-| `npx tsc --noEmit` | Faz a checagem de tipos |
+| `npm run typecheck` | Faz a checagem de tipos |
+| `npm test` | Roda os testes unitários |
+| `npm run test:coverage` | Roda os testes unitários com cobertura |
+| `npm run test:e2e` | Roda os testes de ponta a ponta |
+| `npx prisma db seed` | Cria ou reinicia a conta de demonstração |
+
+## Testes
+
+- **Unitários (Vitest):** cálculos financeiros, períodos, formatação de moeda e dicionário de categorias.
+- **Ponta a ponta (Playwright):** login como visitante, sugestão de categoria, criação, busca e exclusão de transações e orçamentos. As rotas de IA são simuladas, então os testes nunca chamam o Gemini.
+
+Os testes de ponta a ponta precisam de banco com a conta demo e de um build:
+
+```bash
+npx prisma db seed
+npm run build
+npx playwright install chromium
+npm run test:e2e
+```
 
 ## Estrutura do projeto
 
 ```text
-prisma/                 Schema e migrations do banco
+e2e/                    Testes de ponta a ponta
+prisma/                 Schema, migrations e seed
 src/
 ├── app/
 │   ├── (auth)/         Telas de login e cadastro
-│   ├── _actions/       Server Actions das transações
+│   ├── _actions/       Server Actions
 │   ├── _components/    Componentes da interface
-│   ├── _constants/     Rótulos, categorias e meses
-│   ├── _data/          Consultas e cálculos do dashboard
+│   ├── _constants/     Rótulos, categorias e palavras-chave
+│   ├── _data/          Consultas do dashboard
 │   ├── _schemas/       Validações com Zod
-│   ├── api/            Rotas de autenticação e insights
+│   ├── api/            Autenticação, IA e rotina diária
+│   ├── budgets/        Página de orçamentos
 │   └── transactions/   Página de transações
-├── lib/                Autenticação, Prisma e utilitários
+├── lib/                Cálculos, autenticação, IA e utilitários
 ├── styles/             Estilos globais e tokens de design
 └── proxy.ts            Proteção de rotas
 ```
@@ -140,16 +189,15 @@ src/
 3. Cadastre as variáveis de ambiente em **Production** e **Preview**. Em uma `DATABASE_URL` com pooler, inclua `pgbouncer=true&connection_limit=1`.
 4. Faça o deploy. O script `vercel-build` gera o Prisma Client, aplica as migrations e cria o build.
 5. Confirme que `BETTER_AUTH_URL` é igual ao domínio final. Se precisar alterá-la, faça um novo deploy.
+6. Para a conta de demonstração, rode `npx prisma db seed` apontando para o banco de produção. O Cron definido em `vercel.json` a reinicia todos os dias usando o `CRON_SECRET`.
 
 ## Próximos passos
 
-- [ ] Conta de demonstração com dados de exemplo
-- [ ] Sugestão automática de categoria ao digitar o título
-- [ ] Cache dos insights no banco
-- [ ] Busca, filtros e paginação de transações
-- [ ] Gráfico de evolução mensal e gastos por categoria
-- [ ] Orçamento por categoria
-- [ ] Testes automatizados e integração contínua
+- [ ] Importação de extrato em CSV
+- [ ] Transações recorrentes
+- [ ] Tema claro
+- [ ] Chat para perguntar sobre as próprias finanças
+- [ ] Instalação como PWA
 
 ## Autor
 
