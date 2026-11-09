@@ -52,7 +52,11 @@ export default function SignInPage() {
             })
 
             if (err) {
-                setApiError('E-mail ou senha inválidos.')
+                setApiError(
+                    err.status === 429
+                        ? 'Muitas tentativas. Aguarde alguns segundos e tente novamente.'
+                        : 'E-mail ou senha inválidos.'
+                )
                 return
             }
 
