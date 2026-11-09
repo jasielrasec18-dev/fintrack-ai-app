@@ -11,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { authClient } from '@/src/lib/auth-client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Alert, AlertDescription } from '@/src/app/_components/ui/alert'
 
 const signUpFormSchema = z.object({
     name: z.string().trim().nonempty('O nome é obrigatório'),
@@ -27,7 +28,6 @@ export default function SignUpPage() {
 
     const {
         register,
-        reset,
         handleSubmit,
         formState: { errors, isSubmitting },
     } = useForm<SignUpFormData>({
@@ -41,6 +41,7 @@ export default function SignUpPage() {
     })
 
     const onSubmit = async (data: SignUpFormData) => {
+        setApiError('')
         try {
             const { data: result, error: err } = await authClient.signUp.email({
                 name: data.name,
@@ -50,15 +51,14 @@ export default function SignUpPage() {
             })
 
             if (err) {
-                setApiError(
-                    err.message ?? 'Erro ao criar conta. Tente outro email.'
-                )
+                setApiError('Erro ao criar conta. Tente outro e-mail.')
                 return
             }
 
-            if (result) router.push('/')
-
-            reset()
+            if (result) {
+                router.replace('/')
+                router.refresh()
+            }
         } catch {
             setApiError('Erro inesperado. Tente novamente.')
         }
@@ -72,61 +72,85 @@ export default function SignUpPage() {
             footerLinkText="Entrar"
             footerHref="/sign-in"
         >
-            <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-                <label className="block text-sm text-zinc-300 mb-2">Nome</label>
-                <input
-                    type="text"
-                    placeholder="Seu nome"
-                    className={inputClass}
-                    {...register('name')}
-                />
+            <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+                <div className="space-y-2">
+                    <label
+                        htmlFor="name"
+                        className="block text-sm text-zinc-300"
+                    >
+                        Nome
+                    </label>
+                    <input
+                        id="name"
+                        type="text"
+                        placeholder="Seu nome"
+                        className={inputClass}
+                        {...register('name')}
+                    />
+                    {errors.name && (
+                        <p className="text-xs text-red-500">
+                            {errors.name.message}
+                        </p>
+                    )}
+                </div>
+                <div className="space-y-2">
+                    <label
+                        htmlFor="email"
+                        className="block text-sm text-zinc-300"
+                    >
+                        E-mail
+                    </label>
+                    <input
+                        id="email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        className={inputClass}
+                        {...register('email')}
+                    />
+                    {errors.email && (
+                        <p className="text-xs text-red-500">
+                            {errors.email.message}
+                        </p>
+                    )}
+                </div>
+                <div className="space-y-2">
+                    <label
+                        htmlFor="password"
+                        className="block text-sm text-zinc-300"
+                    >
+                        Senha (mín. 8 caracteres)
+                    </label>
+                    <input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        className={inputClass}
+                        {...register('password')}
+                    />
+                    {errors.password && (
+                        <p className="text-xs text-red-500">
+                            {errors.password.message}
+                        </p>
+                    )}
+                </div>
 
-                {errors.name && (
-                    <p className="text-xs text-red-500">
-                        {errors.name.message}
-                    </p>
-                )}
-
-                <label className="block text-sm text-zinc-300 mb-2">
-                    E-mail
-                </label>
-                <input
-                    type="email"
-                    placeholder="seu@email.com"
-                    className={inputClass}
-                    {...register('email')}
-                />
-
-                {errors.email && (
-                    <p className="text-xs text-red-500">
-                        {errors.email.message}
-                    </p>
-                )}
-
-                <label className="block text-sm text-zinc-300 mb-2">
-                    Senha (mín. 8 caracteres)
-                </label>
-                <input
-                    type="password"
-                    placeholder="••••••••"
-                    className={inputClass}
-                    {...register('password')}
-                />
-
-                {errors.password && (
-                    <p className="text-xs text-red-500">
-                        {errors.password.message}
-                    </p>
+                {apiError && (
+                    <Alert variant="destructive">
+                        <AlertDescription className="text-destructive">
+                            {apiError}
+                        </AlertDescription>
+                    </Alert>
                 )}
 
                 <button
                     type="submit"
-                    className="w-full bg-[#9333EA] flex items-center justify-center 
-                    gap-2 font-semibold rounded-2xl py-4 cursor-pointer"
                     disabled={isSubmitting}
+                    className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary font-semibold text-white shadow-lg shadow-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                    <span>Criar conta</span>
-                    <Image src={ArrowIcon} alt="Ícone de seta do botão" />
+                    <span>
+                        {isSubmitting ? 'Criando conta...' : 'Criar conta'}
+                    </span>
+                    <Image src={ArrowIcon} alt="" />
                 </button>
             </form>
         </AuthLayout>

@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { authClient } from '@/src/lib/auth-client'
 import { useRouter } from 'next/navigation'
+import { Alert, AlertDescription } from '@/src/app/_components/ui/alert'
 import { useState } from 'react'
 
 const signInFormSchema = z.object({
@@ -27,7 +28,6 @@ export default function SignInPage() {
     const {
         handleSubmit,
         register,
-        reset,
         formState: { errors, isSubmitting },
     } = useForm<SignInFormData>({
         resolver: zodResolver(signInFormSchema),
@@ -41,6 +41,7 @@ export default function SignInPage() {
     const router = useRouter()
 
     const onSubmit = async (data: SignInFormData) => {
+        setApiError('')
         try {
             const { data: result, error: err } = await authClient.signIn.email({
                 email: data.email,
@@ -49,15 +50,14 @@ export default function SignInPage() {
             })
 
             if (err) {
-                setApiError(
-                    err.message ?? 'Erro ao criar conta. Tente outro email.'
-                )
+                setApiError('E-mail ou senha inválidos.')
                 return
             }
 
-            if (result) router.push('/')
-
-            reset()
+            if (result) {
+                router.replace('/')
+                router.refresh()
+            }
         } catch {
             setApiError('Erro inesperado. Tente novamente.')
         }
@@ -71,46 +71,63 @@ export default function SignInPage() {
             footerLinkText="Criar conta"
             footerHref="/sign-up"
         >
-            <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-                <label className="block text-sm text-zinc-300 mb-2">
-                    E-mail
-                </label>
-                <input
-                    type="email"
-                    placeholder="seu@email.com"
-                    className={inputClass}
-                    {...register('email')}
-                />
+            <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+                <div className="space-y-2">
+                    <label
+                        htmlFor="email"
+                        className="block text-sm text-zinc-300"
+                    >
+                        E-mail
+                    </label>
+                    <input
+                        id="email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        className={inputClass}
+                        {...register('email')}
+                    />
+                    {errors.email && (
+                        <p className="text-xs text-red-500">
+                            {errors.email.message}
+                        </p>
+                    )}
+                </div>
+                <div className="space-y-2">
+                    <label
+                        htmlFor="password"
+                        className="block text-sm text-zinc-300"
+                    >
+                        Senha
+                    </label>
+                    <input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        className={inputClass}
+                        {...register('password')}
+                    />
+                    {errors.password && (
+                        <p className="text-xs text-red-500">
+                            {errors.password.message}
+                        </p>
+                    )}
+                </div>
 
-                {errors.email && (
-                    <p className="text-xs text-red-500">
-                        {errors.email.message}
-                    </p>
-                )}
-
-                <label className="block text-sm text-zinc-300 mb-2">
-                    Senha
-                </label>
-                <input
-                    type="password"
-                    placeholder="••••••••"
-                    className={inputClass}
-                    {...register('password')}
-                />
-
-                {errors.password && (
-                    <p className="text-xs text-red-500">
-                        {errors.password.message}
-                    </p>
+                {apiError && (
+                    <Alert variant="destructive">
+                        <AlertDescription className="text-destructive">
+                            {apiError}
+                        </AlertDescription>
+                    </Alert>
                 )}
 
                 <button
                     type="submit"
-                    className="w-full bg-[#9333EA] flex items-center 
-                justify-center gap-2 font-semibold rounded-2xl py-4 cursor-pointer"
+                    disabled={isSubmitting}
+                    className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary font-semibold text-white shadow-lg shadow-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                    <span>Entrar</span>
-                    <Image src={ArrowIcon} alt="Ícone de seta do botão" />
+                    <span>{isSubmitting ? 'Entrando...' : 'Entrar'}</span>
+                    <Image src={ArrowIcon} alt="" />
                 </button>
             </form>
         </AuthLayout>
