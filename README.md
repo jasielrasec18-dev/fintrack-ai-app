@@ -4,6 +4,7 @@ Controle financeiro pessoal com dashboard mensal e sugestões de economia gerada
 
 ![Dashboard do FinTrack AI](docs/dashboard.png)
 
+- **Aplicação:** [fintrack-ai-app-h3zo.vercel.app](https://fintrack-ai-app-h3zo.vercel.app)
 - **Design:** [Figma](https://www.figma.com/design/QNEXVeiU27cX2V4Ut4i6f0/Fintrack-AI)
 
 ## Funcionalidades
