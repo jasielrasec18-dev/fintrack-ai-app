@@ -64,9 +64,37 @@ model User {
   sessions      Session[]
   accounts      Account[]
   transactions  Transaction[]
+  aiInsights    AiInsight[]
+  aiUsage       AiUsage[]
 
   @@unique([email])
   @@map("user")
+}
+
+model AiInsight {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  year       Int
+  month      Int
+  suggestion String
+  dataHash   String   @map("data_hash")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, year, month])
+  @@map("ai_insights")
+}
+
+model AiUsage {
+  id      String   @id @default(uuid())
+  userId  String   @map("user_id")
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feature String
+  day     DateTime @db.Date
+  count   Int      @default(0)
+
+  @@unique([userId, feature, day])
+  @@map("ai_usage")
 }
 
 model Session {

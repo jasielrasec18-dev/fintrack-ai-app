@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { ApiError, GoogleGenAI } from '@google/genai'
+import { createHash } from 'node:crypto'
+import { ApiError } from '@google/genai'
 import { z } from 'zod'
 import { auth } from '@/src/lib/auth'
+import { consumeAiQuota } from '@/src/lib/ai-usage'
 import { formatBRL } from '@/src/lib/format'
+import {
+    createGeminiClient,
+    GEMINI_MAX_OUTPUT_TOKENS,
+    GEMINI_MODEL,
+} from '@/src/lib/gemini'
+import { prisma } from '@/src/lib/prisma'
 import { getMonthSummary } from '@/src/app/_data/get-month-summary'
 import { TRANSACTION_CATEGORY_LABELS } from '@/src/app/_constants/transaction'
 import { MONTH_OPTIONS } from '@/src/app/_constants/months'
@@ -14,6 +22,7 @@ export const maxDuration = 30
 const bodySchema = z.object({
     month: z.string().regex(/^(0[1-9]|1[0-2])$/),
     year: z.number().int().min(2000).max(2100),
+    force: z.boolean().optional(),
 })
 
 const insightSchema = z.object({
@@ -73,7 +82,7 @@ export async function POST(req: Request) {
         )
     }
 
-    const { month, year } = parsed.data
+    const { month, year, force } = parsed.data
 
     try {
         const summary = await getMonthSummary(session.user.id, month, year)
@@ -120,23 +129,47 @@ ${
         .join('\n') || 'Nenhum gasto registrado.'
 }`
 
-        const gemini = new GoogleGenAI({
-            apiKey,
-            // Uma nova tentativa em picos de demanda, sem passar do maxDuration.
-            httpOptions: {
-                timeout: 12_000,
-                retryOptions: { attempts: 2, httpStatusCodes: [503, 504] },
-            },
-        })
+        const topCategory = {
+            topCategory: top?.label ?? null,
+            topCategoryAmount: top ? formatBRL(top.totalAmount) : null,
+        }
 
-        const response = await gemini.models.generateContent({
-            model: process.env.GEMINI_MODEL ?? 'gemini-3.8-flash',
+        // O hash muda quando os dados do prompt mudam, e isso invalida o cache.
+        const dataHash = createHash('sha256').update(userPrompt).digest('hex')
+        const key = {
+            userId_year_month: {
+                userId: session.user.id,
+                year,
+                month: Number(month),
+            },
+        }
+
+        if (!force) {
+            const cached = await prisma.aiInsight.findUnique({ where: key })
+            if (cached?.dataHash === dataHash) {
+                return NextResponse.json({
+                    suggestion: cached.suggestion,
+                    ...topCategory,
+                })
+            }
+        }
+
+        if (!(await consumeAiQuota(session.user.id, 'insights'))) {
+            return NextResponse.json(
+                { error: 'Limite diário de análises atingido.' },
+                { status: 429 }
+            )
+        }
+
+        const response = await createGeminiClient(
+            apiKey
+        ).models.generateContent({
+            model: GEMINI_MODEL,
             contents: userPrompt,
             config: {
                 systemInstruction: SYSTEM_PROMPT,
                 temperature: 0.4,
-                // Folga para modelos com raciocínio, que consomem o mesmo limite.
-                maxOutputTokens: 1024,
+                maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
                 responseMimeType: 'application/json',
                 responseJsonSchema: {
                     type: 'object',
@@ -150,11 +183,19 @@ ${
             JSON.parse(response.text ?? '{}')
         )
 
-        return NextResponse.json({
-            suggestion,
-            topCategory: top?.label ?? null,
-            topCategoryAmount: top ? formatBRL(top.totalAmount) : null,
+        await prisma.aiInsight.upsert({
+            where: key,
+            create: {
+                userId: session.user.id,
+                year,
+                month: Number(month),
+                suggestion,
+                dataHash,
+            },
+            update: { suggestion, dataHash },
         })
+
+        return NextResponse.json({ suggestion, ...topCategory })
     } catch (err) {
         if (err instanceof ApiError) {
             console.error('[ai-insights] Gemini', err.status, err.message)

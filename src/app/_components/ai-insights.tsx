@@ -23,13 +23,14 @@ interface AiResponse {
 async function requestInsights(
     month: string,
     year: number,
+    force: boolean,
     signal: AbortSignal
 ): Promise<AiResponse> {
     try {
         const response = await fetch('/api/ai-insights', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ month, year }),
+            body: JSON.stringify({ month, year, force }),
             signal,
         })
 
@@ -51,23 +52,28 @@ export const AiInsights = ({ month, year }: AiInsightsProps) => {
     const [insights, setInsights] = useState<AiResponse | null>(null)
     const controllerRef = useRef<AbortController | null>(null)
 
-    const fetchInsights = useCallback(() => {
-        controllerRef.current?.abort()
-        const controller = new AbortController()
-        controllerRef.current = controller
+    const fetchInsights = useCallback(
+        (force: boolean) => {
+            controllerRef.current?.abort()
+            const controller = new AbortController()
+            controllerRef.current = controller
 
-        requestInsights(month, year, controller.signal).then((data) => {
-            // Requisição cancelada: uma mais recente já assumiu o estado.
-            if (controller.signal.aborted) return
+            requestInsights(month, year, force, controller.signal).then(
+                (data) => {
+                    // Requisição cancelada: uma mais recente já assumiu o estado.
+                    if (controller.signal.aborted) return
 
-            setError(data.error ?? null)
-            if (!data.error) setInsights(data)
-            setLoading(false)
-        })
-    }, [month, year])
+                    setError(data.error ?? null)
+                    if (!data.error) setInsights(data)
+                    setLoading(false)
+                }
+            )
+        },
+        [month, year]
+    )
 
     useEffect(() => {
-        fetchInsights()
+        fetchInsights(false)
 
         return () => controllerRef.current?.abort()
     }, [fetchInsights])
@@ -75,7 +81,7 @@ export const AiInsights = ({ month, year }: AiInsightsProps) => {
     const handleRefresh = () => {
         setLoading(true)
         setError(null)
-        fetchInsights()
+        fetchInsights(true)
     }
 
     return (

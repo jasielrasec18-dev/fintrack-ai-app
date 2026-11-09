@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import Image from 'next/image'
 import PlusIcon from '@/src/assets/plus-icon.png'
@@ -30,7 +30,7 @@ import {
     SelectValue,
 } from './ui/select'
 
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, useWatch, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 import {
@@ -72,6 +72,9 @@ export const AddTransactionButton = ({
 }: AddTransactionButtonProps) => {
     const [open, setIsOpen] = useState<boolean>(false)
     const [serverError, setServerError] = useState<string | null>(null)
+    const [isSuggested, setIsSuggested] = useState<boolean>(false)
+    const categoryTouched = useRef<boolean>(false)
+    const typeTouched = useRef<boolean>(false)
 
     const router = useRouter()
 
@@ -80,6 +83,7 @@ export const AddTransactionButton = ({
         handleSubmit,
         reset,
         control,
+        setValue,
         formState: { errors, isSubmitting },
     } = useForm<CreateTransactionFormInput, unknown, CreateTransactionFormData>(
         {
@@ -96,11 +100,56 @@ export const AddTransactionButton = ({
         }
     )
 
+    const title = useWatch({ control, name: 'name' })
+
+    useEffect(() => {
+        const name = title?.trim() ?? ''
+        if (!open || transaction || name.length < 3) return
+
+        const controller = new AbortController()
+        const timer = setTimeout(async () => {
+            if (categoryTouched.current) return
+
+            // Sem sugestão, o formulário segue normalmente.
+            try {
+                const response = await fetch('/api/ai-categorize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name }),
+                    signal: controller.signal,
+                })
+                if (!response.ok) return
+
+                const suggestion: {
+                    category: TransactionCategory | null
+                    type: TransactionType | null
+                } = await response.json()
+                if (!suggestion.category || categoryTouched.current) return
+
+                setValue('category', suggestion.category, {
+                    shouldValidate: true,
+                })
+                setIsSuggested(true)
+                if (suggestion.type && !typeTouched.current) {
+                    setValue('type', suggestion.type, { shouldValidate: true })
+                }
+            } catch {}
+        }, 500)
+
+        return () => {
+            clearTimeout(timer)
+            controller.abort()
+        }
+    }, [title, open, transaction, setValue])
+
     const handleOpenChange = (nextOpen: boolean) => {
         setIsOpen(nextOpen)
         if (!nextOpen) {
             reset()
             setServerError(null)
+            setIsSuggested(false)
+            categoryTouched.current = false
+            typeTouched.current = false
         }
     }
 
@@ -216,7 +265,10 @@ export const AddTransactionButton = ({
                                     name="type"
                                     render={({ field }) => (
                                         <Select
-                                            onValueChange={field.onChange}
+                                            onValueChange={(value) => {
+                                                typeTouched.current = true
+                                                field.onChange(value)
+                                            }}
                                             value={field.value ?? ''}
                                         >
                                             <SelectTrigger
@@ -249,19 +301,30 @@ export const AddTransactionButton = ({
                                 )}
                             </div>
                             <div>
-                                <Label
-                                    htmlFor="category"
-                                    className={labelClass}
-                                >
-                                    Categoria
-                                </Label>
+                                <div className="mb-2 flex items-center justify-between gap-2">
+                                    <Label
+                                        htmlFor="category"
+                                        className="text-sm font-medium text-white"
+                                    >
+                                        Categoria
+                                    </Label>
+                                    {isSuggested && (
+                                        <span className="rounded-full bg-primary/20 px-2 py-0.5 text-xs text-[#E9D5FF]">
+                                            ✨ Sugerido pela IA
+                                        </span>
+                                    )}
+                                </div>
 
                                 <Controller
                                     control={control}
                                     name="category"
                                     render={({ field }) => (
                                         <Select
-                                            onValueChange={field.onChange}
+                                            onValueChange={(value) => {
+                                                categoryTouched.current = true
+                                                setIsSuggested(false)
+                                                field.onChange(value)
+                                            }}
                                             value={field.value ?? ''}
                                         >
                                             <SelectTrigger
