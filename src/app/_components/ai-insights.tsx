@@ -20,48 +20,50 @@ interface AiResponse {
     topCategoryAmount?: string | null
 }
 
+async function requestInsights(
+    month: string,
+    year: number,
+    signal: AbortSignal
+): Promise<AiResponse> {
+    try {
+        const response = await fetch('/api/ai-insights', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ month, year }),
+            signal,
+        })
+
+        const data: AiResponse = await response
+            .json()
+            .catch(() => ({ error: 'Resposta inválida do servidor.' }))
+
+        return response.ok
+            ? data
+            : { error: data.error ?? 'Erro ao carregar análise.' }
+    } catch {
+        return { error: 'Erro ao conectar. Tente novamente.' }
+    }
+}
+
 export const AiInsights = ({ month, year }: AiInsightsProps) => {
     const [loading, setLoading] = useState<boolean>(true)
     const [error, setError] = useState<string | null>(null)
     const [insights, setInsights] = useState<AiResponse | null>(null)
     const controllerRef = useRef<AbortController | null>(null)
 
-    const fetchInsights = useCallback(async () => {
+    const fetchInsights = useCallback(() => {
         controllerRef.current?.abort()
         const controller = new AbortController()
         controllerRef.current = controller
 
-        try {
-            const response = await fetch('/api/ai-insights', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ month, year }),
-                signal: controller.signal,
-            })
-
-            const data: AiResponse = await response
-                .json()
-                .catch(() => ({ error: 'Resposta inválida do servidor.' }))
-
+        requestInsights(month, year, controller.signal).then((data) => {
+            // Requisição cancelada: uma mais recente já assumiu o estado.
             if (controller.signal.aborted) return
 
-            if (!response.ok || data.error) {
-                setError(data.error ?? 'Erro ao carregar análise.')
-                return
-            }
-
-            setError(null)
-            setInsights(data)
-        } catch (err) {
-            if (err instanceof DOMException && err.name === 'AbortError') {
-                return
-            }
-            setError('Erro ao conectar. Tente novamente.')
-        } finally {
-            if (controllerRef.current === controller) {
-                setLoading(false)
-            }
-        }
+            setError(data.error ?? null)
+            if (!data.error) setInsights(data)
+            setLoading(false)
+        })
     }, [month, year])
 
     useEffect(() => {

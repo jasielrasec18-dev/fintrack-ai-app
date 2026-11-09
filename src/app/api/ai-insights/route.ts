@@ -41,6 +41,12 @@ function getGeminiErrorResponse(err: ApiError) {
     if (err.status === 404) {
         return { error: 'Modelo de IA indisponível.', status: 502 }
     }
+    if (err.status === 503 || err.status === 504) {
+        return {
+            error: 'Serviço de IA sobrecarregado. Tente novamente em instantes.',
+            status: 503,
+        }
+    }
     return { error: 'Erro no serviço de IA.', status: 502 }
 }
 
@@ -116,7 +122,11 @@ ${
 
         const gemini = new GoogleGenAI({
             apiKey,
-            httpOptions: { timeout: 20_000 },
+            // Uma nova tentativa em picos de demanda, sem passar do maxDuration.
+            httpOptions: {
+                timeout: 12_000,
+                retryOptions: { attempts: 2, httpStatusCodes: [503, 504] },
+            },
         })
 
         const response = await gemini.models.generateContent({
