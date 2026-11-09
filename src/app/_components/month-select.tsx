@@ -29,7 +29,7 @@ export const MonthSelect = ({ month }: MonthSelectProps) => {
         <Select value={month} onValueChange={handleChange}>
             <SelectTrigger
                 aria-label="Selecionar mês"
-                className="h-9 data-[size=default]:h-9 rounded-lg border-none bg-[#1E293B] px-3 text-sm text-[#CBD5E1]"
+                className="h-9 w-40 shrink-0 data-[size=default]:h-9 rounded-lg border-none bg-[#1E293B] px-3 text-sm text-[#CBD5E1]"
             >
                 <SelectValue />
             </SelectTrigger>
