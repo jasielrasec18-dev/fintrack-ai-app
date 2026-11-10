@@ -194,13 +194,6 @@ src/
 5. Confirme que `BETTER_AUTH_URL` é igual ao domínio final. Se precisar alterá-la, faça um novo deploy.
 6. Para a conta de demonstração, rode `npx prisma db seed` apontando para o banco de produção. O Cron definido em `vercel.json` a reinicia todos os dias usando o `CRON_SECRET`.
 
-## Próximos passos
-
-- [ ] Importação de extrato em CSV
-- [ ] Transações recorrentes
-- [ ] Tema claro
-- [ ] Chat para perguntar sobre as próprias finanças
-- [ ] Instalação como PWA
 
 ## Autor
 
